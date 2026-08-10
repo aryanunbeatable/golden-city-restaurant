@@ -1,0 +1,2813 @@
+{
+  "restaurant": "Golden City Restaurant",
+  "location": "Gorakhpur",
+  "tableCount": 4,
+  "legend": {
+    "veg": "Green dot",
+    "nonVeg": "Red dot",
+    "glutenFree": "Gluten Free",
+    "chefSpecial": "Chef's Special"
+  },
+  "meta": {
+    "menuScope": "full",
+    "note": "Full menu digitized per client request (~153 items across 15 categories) — supersedes the earlier curated-subset pass.",
+    "prepTimeNote": "prepTimeMinutes values are category-level estimates set to the higher end of a reasonable range per client request (no real kitchen data supplied yet) — flag for correction before go-live.",
+    "priceSource": "All prices transcribed directly and legibly from client-supplied menu text; none unconfirmed.",
+    "photoSource": "No dish photos supplied — every item uses the 'placeholder' photo state.",
+    "orderTypes": [
+      "Table 1",
+      "Table 2",
+      "Table 3",
+      "Table 4",
+      "Swiggy",
+      "Zomato",
+      "Parcel"
+    ],
+    "hindiNote": "nameHi fields (item + variant names only) are draft transliterations for the Kitchen dashboard's EN/HI toggle, generated without a native-speaker/chef review — confirm before go-live. UI chrome, descriptions, and prices are intentionally left English-only per current scope."
+  },
+  "categories": [
+    {
+      "id": "soups",
+      "name": "Soups",
+      "items": [
+        {
+          "id": "veg-soup",
+          "name": "Veg Soup",
+          "description": "",
+          "price": 119,
+          "veg": true,
+          "prepTimeMinutes": 10,
+          "photo": "placeholder",
+          "nameHi": "वेज सूप"
+        },
+        {
+          "id": "tomato-soup",
+          "name": "Tomato Soup",
+          "description": "",
+          "price": 119,
+          "veg": true,
+          "prepTimeMinutes": 10,
+          "photo": "placeholder",
+          "nameHi": "टमाटर सूप"
+        },
+        {
+          "id": "manchow-soup",
+          "name": "Manchow Soup",
+          "description": "Spicy Indo-Chinese soup with vegetables and aromatic seasonings.",
+          "variants": [
+            {
+              "name": "Veg",
+              "price": 139,
+              "veg": true,
+              "nameHi": "वेज"
+            },
+            {
+              "name": "Non-Veg",
+              "price": 149,
+              "veg": false,
+              "nameHi": "नॉन-वेज"
+            }
+          ],
+          "prepTimeMinutes": 10,
+          "photo": "placeholder",
+          "nameHi": "मनचाउ सूप"
+        },
+        {
+          "id": "hot-sour-soup",
+          "name": "Hot & Sour Soup",
+          "description": "Tangy, peppery broth with shredded vegetables and vinegar.",
+          "variants": [
+            {
+              "name": "Veg",
+              "price": 139,
+              "veg": true,
+              "nameHi": "वेज"
+            },
+            {
+              "name": "Non-Veg",
+              "price": 149,
+              "veg": false,
+              "nameHi": "नॉन-वेज"
+            }
+          ],
+          "prepTimeMinutes": 10,
+          "photo": "placeholder",
+          "nameHi": "हॉट एंड सावर सूप"
+        },
+        {
+          "id": "cream-of-mushroom-soup",
+          "name": "Cream of Mushroom Soup",
+          "description": "Creamy soup made with fresh mushrooms and mild seasoning.",
+          "price": 139,
+          "veg": true,
+          "prepTimeMinutes": 10,
+          "photo": "placeholder",
+          "nameHi": "क्रीम ऑफ मशरूम सूप"
+        },
+        {
+          "id": "chicken-soup",
+          "name": "Chicken Soup",
+          "description": "Light broth simmered with chicken pieces and herbs.",
+          "price": 149,
+          "veg": false,
+          "prepTimeMinutes": 10,
+          "photo": "placeholder",
+          "nameHi": "चिकन सूप"
+        }
+      ]
+    },
+    {
+      "id": "beverages-shakes",
+      "name": "Beverages / Shakes",
+      "items": [
+        {
+          "id": "fresh-lime-soda",
+          "name": "Fresh Lime Soda",
+          "description": "",
+          "price": 79,
+          "veg": true,
+          "prepTimeMinutes": 6,
+          "photo": "placeholder",
+          "nameHi": "फ्रेश लाइम सोडा"
+        },
+        {
+          "id": "hot-coffee",
+          "name": "Hot Coffee",
+          "description": "",
+          "price": 49,
+          "veg": true,
+          "prepTimeMinutes": 6,
+          "photo": "placeholder",
+          "nameHi": "हॉट कॉफी"
+        },
+        {
+          "id": "cold-coffee",
+          "name": "Cold Coffee",
+          "description": "",
+          "price": 119,
+          "veg": true,
+          "prepTimeMinutes": 6,
+          "photo": "placeholder",
+          "nameHi": "कोल्ड कॉफी"
+        },
+        {
+          "id": "butter-scotch-shake",
+          "name": "Butter Scotch Shake",
+          "description": "",
+          "price": 139,
+          "veg": true,
+          "prepTimeMinutes": 6,
+          "photo": "placeholder",
+          "nameHi": "बटर स्कॉच शेक"
+        },
+        {
+          "id": "vanilla-shake",
+          "name": "Vanilla Shake",
+          "description": "",
+          "price": 119,
+          "veg": true,
+          "prepTimeMinutes": 6,
+          "photo": "placeholder",
+          "nameHi": "वनीला शेक"
+        },
+        {
+          "id": "chocolate-shake",
+          "name": "Chocolate Shake",
+          "description": "",
+          "price": 119,
+          "veg": true,
+          "prepTimeMinutes": 6,
+          "photo": "placeholder",
+          "nameHi": "चॉकलेट शेक"
+        }
+      ]
+    },
+    {
+      "id": "veg-starters",
+      "name": "Veg Starters",
+      "note": "Source menu groups one non-veg item (Non-Veg. Triple Fried Rice) in this section; preserved as in the original.",
+      "items": [
+        {
+          "id": "paneer-65",
+          "name": "Paneer 65",
+          "description": "Deep-fried spiced paneer cubes tossed in curry leaf seasoning.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 149,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 259,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "पनीर 65"
+        },
+        {
+          "id": "mushroom-65",
+          "name": "Mushroom 65",
+          "description": "Crispy fried mushrooms tossed in spicy South Indian style masala.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 169,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 279,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "मशरूम 65"
+        },
+        {
+          "id": "baby-corn-65",
+          "name": "Baby Corn 65",
+          "description": "Crunchy fried baby corn coated in tangy spiced batter.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 179,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 299,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "बेबी कॉर्न 65"
+        },
+        {
+          "id": "gobhi-65",
+          "name": "Gobhi 65 (Seasonal)",
+          "description": "Crispy fried cauliflower florets tossed in spicy masala.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 129,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 209,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "गोभी 65 (सीज़नल)"
+        },
+        {
+          "id": "spring-roll",
+          "name": "Spring Roll",
+          "description": "Crispy rolls stuffed with shredded vegetables.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 80,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 159,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "स्प्रिंग रोल"
+        },
+        {
+          "id": "paneer-chilli",
+          "name": "Paneer Chilli (Dry/Gravy)",
+          "description": "Paneer tossed in spicy chilli garlic sauce.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 149,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 259,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "पनीर चिल्ली (ड्राई/ग्रेवी)"
+        },
+        {
+          "id": "paneer-garlic-chilli",
+          "name": "Paneer Garlic Chilli",
+          "description": "Fried paneer stir-fried with garlic and chilli sauce.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 159,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 269,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "पनीर गार्लिक चिल्ली"
+        },
+        {
+          "id": "mushroom-chilli",
+          "name": "Mushroom Chilli",
+          "description": "Mushrooms tossed in spicy chilli garlic sauce.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 159,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 280,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "मशरूम चिल्ली"
+        },
+        {
+          "id": "gobhi-chilli",
+          "name": "Gobhi Chilli (Seasonal)",
+          "description": "Fried cauliflower tossed in spicy chilli sauce.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 129,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 219,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "गोभी चिल्ली (सीज़नल)"
+        },
+        {
+          "id": "crispy-baby-corn",
+          "name": "Crispy Baby Corn",
+          "description": "Batter-fried baby corn tossed in spicy sauce.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 159,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 280,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "क्रिस्पी बेबी कॉर्न"
+        },
+        {
+          "id": "crispy-potato-honey-chilli",
+          "name": "Crispy Potato Honey Chilli",
+          "description": "Crispy fried potatoes glazed in sweet and spicy honey chilli sauce.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 129,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 219,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "क्रिस्पी पोटैटो हनी चिल्ली"
+        },
+        {
+          "id": "chana-chilli",
+          "name": "Chana Chilli",
+          "description": "Chickpeas tossed in spicy chilli garlic sauce.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 139,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 260,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "चना चिल्ली"
+        },
+        {
+          "id": "soya-chilli",
+          "name": "Soya Chilli",
+          "description": "Soya chunks stir-fried in spicy chilli sauce.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 120,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 219,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "सोया चिल्ली"
+        },
+        {
+          "id": "veg-triple-fried-rice",
+          "name": "Veg. Triple Fried Rice",
+          "description": "Mixed fried rice with vegetables in a triple schezwan-style preparation.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 179,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 299,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "वेज ट्रिपल फ्राइड राइस"
+        },
+        {
+          "id": "non-veg-triple-fried-rice",
+          "name": "Non-Veg. Triple Fried Rice",
+          "description": "Fried rice tossed with mixed non-veg and vegetables.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 189,
+              "veg": false,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 339,
+              "veg": false,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "नॉन-वेज ट्रिपल फ्राइड राइस"
+        }
+      ]
+    },
+    {
+      "id": "chinese-flavour",
+      "name": "Chinese Flavour",
+      "items": [
+        {
+          "id": "noodles",
+          "name": "Noodles",
+          "description": "",
+          "variants": [
+            {
+              "name": "Veg",
+              "price": 169,
+              "veg": true,
+              "nameHi": "वेज"
+            },
+            {
+              "name": "Egg",
+              "price": 189,
+              "veg": false,
+              "nameHi": "अंडा"
+            },
+            {
+              "name": "Chicken",
+              "price": 209,
+              "veg": false,
+              "nameHi": "चिकन"
+            }
+          ],
+          "prepTimeMinutes": 16,
+          "photo": "placeholder",
+          "nameHi": "नूडल्स"
+        },
+        {
+          "id": "hakka-noodles",
+          "name": "Hakka Noodles",
+          "description": "Stir-fried noodles tossed with vegetables in light soy sauce.",
+          "variants": [
+            {
+              "name": "Veg",
+              "price": 189,
+              "veg": true,
+              "nameHi": "वेज"
+            },
+            {
+              "name": "Egg",
+              "price": 209,
+              "veg": false,
+              "nameHi": "अंडा"
+            },
+            {
+              "name": "Chicken",
+              "price": 229,
+              "veg": false,
+              "nameHi": "चिकन"
+            }
+          ],
+          "prepTimeMinutes": 16,
+          "photo": "placeholder",
+          "nameHi": "हक्का नूडल्स"
+        },
+        {
+          "id": "chilli-garlic-noodles",
+          "name": "Chilli Garlic Noodles",
+          "description": "Noodles tossed with garlic and spicy chilli sauce.",
+          "variants": [
+            {
+              "name": "Veg",
+              "price": 199,
+              "veg": true,
+              "nameHi": "वेज"
+            },
+            {
+              "name": "Egg",
+              "price": 219,
+              "veg": false,
+              "nameHi": "अंडा"
+            },
+            {
+              "name": "Chicken",
+              "price": 239,
+              "veg": false,
+              "nameHi": "चिकन"
+            }
+          ],
+          "prepTimeMinutes": 16,
+          "photo": "placeholder",
+          "nameHi": "चिल्ली गार्लिक नूडल्स"
+        },
+        {
+          "id": "schezwan-noodles",
+          "name": "Schezwan Noodles",
+          "description": "Noodles tossed in fiery schezwan sauce with vegetables.",
+          "variants": [
+            {
+              "name": "Veg",
+              "price": 199,
+              "veg": true,
+              "nameHi": "वेज"
+            },
+            {
+              "name": "Egg",
+              "price": 219,
+              "veg": false,
+              "nameHi": "अंडा"
+            },
+            {
+              "name": "Chicken",
+              "price": 239,
+              "veg": false,
+              "nameHi": "चिकन"
+            }
+          ],
+          "prepTimeMinutes": 16,
+          "photo": "placeholder",
+          "nameHi": "शेजवान नूडल्स"
+        },
+        {
+          "id": "fried-rice",
+          "name": "Fried Rice",
+          "description": "",
+          "variants": [
+            {
+              "name": "Veg",
+              "price": 189,
+              "veg": true,
+              "nameHi": "वेज"
+            },
+            {
+              "name": "Egg",
+              "price": 209,
+              "veg": false,
+              "nameHi": "अंडा"
+            },
+            {
+              "name": "Chicken",
+              "price": 229,
+              "veg": false,
+              "nameHi": "चिकन"
+            }
+          ],
+          "prepTimeMinutes": 16,
+          "photo": "placeholder",
+          "nameHi": "फ्राइड राइस"
+        },
+        {
+          "id": "schezwan-fried-rice",
+          "name": "Schezwan Fried Rice",
+          "description": "Rice stir-fried in spicy schezwan sauce with vegetables.",
+          "variants": [
+            {
+              "name": "Veg",
+              "price": 189,
+              "veg": true,
+              "nameHi": "वेज"
+            },
+            {
+              "name": "Egg",
+              "price": 209,
+              "veg": false,
+              "nameHi": "अंडा"
+            },
+            {
+              "name": "Chicken",
+              "price": 229,
+              "veg": false,
+              "nameHi": "चिकन"
+            }
+          ],
+          "prepTimeMinutes": 16,
+          "photo": "placeholder",
+          "nameHi": "शेजवान फ्राइड राइस"
+        },
+        {
+          "id": "garlic-fried-rice",
+          "name": "Garlic Fried Rice",
+          "description": "Rice stir-fried with garlic and vegetables.",
+          "variants": [
+            {
+              "name": "Veg",
+              "price": 189,
+              "veg": true,
+              "nameHi": "वेज"
+            },
+            {
+              "name": "Egg",
+              "price": 209,
+              "veg": false,
+              "nameHi": "अंडा"
+            },
+            {
+              "name": "Chicken",
+              "price": 229,
+              "veg": false,
+              "nameHi": "चिकन"
+            }
+          ],
+          "prepTimeMinutes": 16,
+          "photo": "placeholder",
+          "nameHi": "गार्लिक फ्राइड राइस"
+        },
+        {
+          "id": "paneer-lollipop",
+          "name": "Paneer Lollipop 6 Pcs",
+          "description": "Paneer coated and fried into lollipop-shaped crispy bites.",
+          "price": 319,
+          "veg": true,
+          "prepTimeMinutes": 16,
+          "photo": "placeholder",
+          "nameHi": "पनीर लॉलीपॉप 6 पीस"
+        },
+        {
+          "id": "chicken-manchurian",
+          "name": "Chicken Manchurian",
+          "description": "Fried chicken tossed in tangy Indo-Chinese Manchurian sauce.",
+          "price": 309,
+          "veg": false,
+          "prepTimeMinutes": 16,
+          "photo": "placeholder",
+          "nameHi": "चिकन मंचूरियन"
+        },
+        {
+          "id": "chicken-chilli-boneless",
+          "name": "Chicken Chilli Boneless",
+          "description": "Boneless chicken stir-fried in spicy chilli garlic sauce.",
+          "price": 309,
+          "veg": false,
+          "prepTimeMinutes": 16,
+          "photo": "placeholder",
+          "nameHi": "चिकन चिल्ली बोनलेस"
+        },
+        {
+          "id": "chicken-chilli-bone",
+          "name": "Chicken Chilli Bone",
+          "description": "Bone-in chicken stir-fried in spicy chilli garlic sauce.",
+          "price": 319,
+          "veg": false,
+          "prepTimeMinutes": 16,
+          "photo": "placeholder",
+          "nameHi": "चिकन चिल्ली बोन"
+        },
+        {
+          "id": "chicken-lollipop",
+          "name": "Chicken Lollipop",
+          "description": "Frenched chicken wings deep-fried and tossed in spicy sauce.",
+          "price": 299,
+          "veg": false,
+          "prepTimeMinutes": 16,
+          "photo": "placeholder",
+          "nameHi": "चिकन लॉलीपॉप"
+        },
+        {
+          "id": "chicken-garlic-chilli",
+          "name": "Chicken Garlic Chilli",
+          "description": "Chicken stir-fried with garlic and chilli in spicy sauce.",
+          "price": 309,
+          "veg": false,
+          "prepTimeMinutes": 16,
+          "photo": "placeholder",
+          "nameHi": "चिकन गार्लिक चिल्ली"
+        }
+      ]
+    },
+    {
+      "id": "tandoor",
+      "name": "Tandoor",
+      "items": [
+        {
+          "id": "paneer-tikka",
+          "name": "Paneer Tikka 08 Pcs",
+          "description": "Marinated paneer cubes grilled in the tandoor.",
+          "price": 319,
+          "veg": true,
+          "prepTimeMinutes": 22,
+          "photo": "placeholder",
+          "nameHi": "पनीर टिक्का 08 पीस"
+        },
+        {
+          "id": "paneer-malai-tikka",
+          "name": "Paneer Malai Tikka 08 Pcs",
+          "description": "Paneer marinated in creamy cashew mixture, grilled in tandoor.",
+          "price": 339,
+          "veg": true,
+          "prepTimeMinutes": 22,
+          "photo": "placeholder",
+          "nameHi": "पनीर मलाई टिक्का 08 पीस"
+        },
+        {
+          "id": "paneer-haryali-tikka",
+          "name": "Paneer Haryali Tikka 08 Pcs",
+          "description": "Paneer marinated in mint-coriander paste, grilled in tandoor.",
+          "price": 319,
+          "veg": true,
+          "prepTimeMinutes": 22,
+          "photo": "placeholder",
+          "nameHi": "पनीर हरियाली टिक्का 08 पीस"
+        },
+        {
+          "id": "mushroom-tikka",
+          "name": "Mushroom Tikka",
+          "description": "Marinated mushrooms grilled in the tandoor.",
+          "price": 269,
+          "veg": true,
+          "prepTimeMinutes": 22,
+          "photo": "placeholder",
+          "nameHi": "मशरूम टिक्का"
+        },
+        {
+          "id": "veg-seekh-kebab",
+          "name": "Veg Seekh Kebab 08 Pcs",
+          "description": "Minced mixed vegetables skewered and grilled in tandoor.",
+          "price": 239,
+          "veg": true,
+          "prepTimeMinutes": 22,
+          "photo": "placeholder",
+          "nameHi": "वेज सीख कबाब 08 पीस"
+        },
+        {
+          "id": "tandoor-veg-platter",
+          "name": "Tandoor Veg Platter",
+          "description": "Assorted grilled vegetarian tandoor starters served together.",
+          "price": 579,
+          "veg": true,
+          "prepTimeMinutes": 22,
+          "photo": "placeholder",
+          "nameHi": "तंदूर वेज प्लेटर"
+        },
+        {
+          "id": "chicken-tandoori",
+          "name": "Chicken Tandoori",
+          "description": "Classic marinated chicken roasted in the tandoor.",
+          "variants": [
+            {
+              "name": "06 Pcs",
+              "price": 239,
+              "veg": false,
+              "nameHi": "06 पीस"
+            },
+            {
+              "name": "12 Pcs",
+              "price": 439,
+              "veg": false,
+              "nameHi": "12 पीस"
+            }
+          ],
+          "prepTimeMinutes": 22,
+          "photo": "placeholder",
+          "nameHi": "चिकन तंदूरी"
+        },
+        {
+          "id": "chicken-afgani-tikka",
+          "name": "Chicken Afgani Tikka",
+          "description": "Chicken marinated in creamy mild spices, grilled in tandoor.",
+          "variants": [
+            {
+              "name": "06 Pcs",
+              "price": 309,
+              "veg": false,
+              "nameHi": "06 पीस"
+            },
+            {
+              "name": "12 Pcs",
+              "price": 569,
+              "veg": false,
+              "nameHi": "12 पीस"
+            }
+          ],
+          "prepTimeMinutes": 22,
+          "photo": "placeholder",
+          "nameHi": "चिकन अफगानी टिक्का"
+        },
+        {
+          "id": "chicken-tikka",
+          "name": "Chicken Tikka 08 Pcs",
+          "description": "Boneless chicken marinated in spices and grilled in tandoor.",
+          "price": 269,
+          "veg": false,
+          "prepTimeMinutes": 22,
+          "photo": "placeholder",
+          "nameHi": "चिकन टिक्का 08 पीस"
+        },
+        {
+          "id": "chicken-haryali-tikka",
+          "name": "Chicken Haryali Tikka 08 Pcs",
+          "description": "Chicken marinated in mint-coriander paste, grilled in tandoor.",
+          "price": 269,
+          "veg": false,
+          "prepTimeMinutes": 22,
+          "photo": "placeholder",
+          "nameHi": "चिकन हरियाली टिक्का 08 पीस"
+        },
+        {
+          "id": "chicken-malai-tikka",
+          "name": "Chicken Malai Tikka 08 Pcs",
+          "description": "Chicken marinated in creamy cashew mixture, grilled in tandoor.",
+          "price": 319,
+          "veg": false,
+          "prepTimeMinutes": 22,
+          "photo": "placeholder",
+          "nameHi": "चिकन मलाई टिक्का 08 पीस"
+        },
+        {
+          "id": "chicken-laziz-tikka",
+          "name": "Chicken Laziz Tikka 08 Pcs",
+          "description": "Chicken marinated in rich spiced mixture, grilled in tandoor.",
+          "price": 319,
+          "veg": false,
+          "prepTimeMinutes": 22,
+          "photo": "placeholder",
+          "nameHi": "चिकन लज़ीज़ टिक्का 08 पीस"
+        }
+      ]
+    },
+    {
+      "id": "salad-papad-raita",
+      "name": "Salad / Papad / Raita",
+      "items": [
+        {
+          "id": "green-salad",
+          "name": "Green Salad",
+          "description": "",
+          "price": 99,
+          "veg": true,
+          "prepTimeMinutes": 5,
+          "photo": "placeholder",
+          "nameHi": "ग्रीन सलाद"
+        },
+        {
+          "id": "mix-raita",
+          "name": "Mix Raita",
+          "description": "",
+          "price": 99,
+          "veg": true,
+          "prepTimeMinutes": 5,
+          "photo": "placeholder",
+          "nameHi": "मिक्स रायता"
+        },
+        {
+          "id": "cucumber-raita",
+          "name": "Cucumber Raita",
+          "description": "",
+          "price": 79,
+          "veg": true,
+          "prepTimeMinutes": 5,
+          "photo": "placeholder",
+          "nameHi": "ककड़ी रायता"
+        },
+        {
+          "id": "boondi-raita",
+          "name": "Boondi Raita",
+          "description": "",
+          "price": 79,
+          "veg": true,
+          "prepTimeMinutes": 5,
+          "photo": "placeholder",
+          "nameHi": "बूंदी रायता"
+        },
+        {
+          "id": "curd-plain",
+          "name": "Curd Plain",
+          "description": "",
+          "price": 99,
+          "veg": true,
+          "prepTimeMinutes": 5,
+          "photo": "placeholder",
+          "nameHi": "दही प्लेन"
+        },
+        {
+          "id": "papad-dry",
+          "name": "Papad Dry",
+          "description": "",
+          "price": 29,
+          "veg": true,
+          "prepTimeMinutes": 5,
+          "photo": "placeholder",
+          "nameHi": "पापड़ ड्राई"
+        },
+        {
+          "id": "papad-fry",
+          "name": "Papad Fry",
+          "description": "",
+          "price": 39,
+          "veg": true,
+          "prepTimeMinutes": 5,
+          "photo": "placeholder",
+          "nameHi": "पापड़ फ्राई"
+        },
+        {
+          "id": "masala-papad",
+          "name": "Masala Papad",
+          "description": "",
+          "price": 79,
+          "veg": true,
+          "prepTimeMinutes": 5,
+          "photo": "placeholder",
+          "nameHi": "मसाला पापड़"
+        }
+      ]
+    },
+    {
+      "id": "golden-fry",
+      "name": "Golden Fry",
+      "note": "Full category included — only 2 items exist.",
+      "items": [
+        {
+          "id": "golden-fry-chicken",
+          "name": "Chicken",
+          "description": "Deep-fried marinated chicken pieces, golden and crispy.",
+          "variants": [
+            {
+              "name": "250gm",
+              "price": 169,
+              "veg": false,
+              "nameHi": "250 ग्राम"
+            },
+            {
+              "name": "500gm",
+              "price": 319,
+              "veg": false,
+              "nameHi": "500 ग्राम"
+            },
+            {
+              "name": "1Kg",
+              "price": 569,
+              "veg": false,
+              "nameHi": "1 किलो"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "चिकन"
+        },
+        {
+          "id": "golden-fry-fish",
+          "name": "Fish (Rohu/Paplet)",
+          "description": "Deep-fried marinated fish, golden and crispy.",
+          "variants": [
+            {
+              "name": "250gm",
+              "price": 219,
+              "veg": false,
+              "nameHi": "250 ग्राम"
+            },
+            {
+              "name": "500gm",
+              "price": 369,
+              "veg": false,
+              "nameHi": "500 ग्राम"
+            },
+            {
+              "name": "1Kg",
+              "price": 719,
+              "veg": false,
+              "nameHi": "1 किलो"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "फिश (रोहू/पापलेट)"
+        }
+      ]
+    },
+    {
+      "id": "thali-specials",
+      "name": "Thali Specials",
+      "items": [
+        {
+          "id": "golden-veg-thali",
+          "name": "Golden Veg Thali",
+          "description": "2 Roti, paneer, mix vegetable, dal, rice, raita, salad, pickle, gulab jamun.",
+          "price": 199,
+          "veg": true,
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "गोल्डन वेज थाली"
+        },
+        {
+          "id": "golden-mini-veg-thali",
+          "name": "Golden Mini Veg Thali",
+          "description": "2 Roti, mix vegetable, dal, rice, raita, salad, pickle.",
+          "price": 149,
+          "veg": true,
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "गोल्डन मिनी वेज थाली"
+        },
+        {
+          "id": "golden-chicken-thali",
+          "name": "Golden Chicken Thali",
+          "description": "2 Roti, 2 chicken pieces, rice, salad.",
+          "price": 199,
+          "veg": false,
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "गोल्डन चिकन थाली"
+        },
+        {
+          "id": "golden-mutton-thali",
+          "name": "Golden Mutton Thali",
+          "description": "2 Roti, 2 mutton pieces, rice, salad.",
+          "price": 299,
+          "veg": false,
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "गोल्डन मटन थाली"
+        },
+        {
+          "id": "chicken-dum-biryani-half-thali",
+          "name": "Chicken Dum Biryani Half",
+          "description": "",
+          "price": 119,
+          "veg": false,
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "चिकन दम बिरयानी हाफ"
+        },
+        {
+          "id": "chicken-roasted-tandoori-6pcs",
+          "name": "Chicken Roasted/Tandoori 6 Pcs",
+          "description": "",
+          "price": 219,
+          "veg": false,
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "चिकन रोस्टेड/तंदूरी 6 पीस"
+        }
+      ]
+    },
+    {
+      "id": "main-course-veg",
+      "name": "Main Course Veg.",
+      "items": [
+        {
+          "id": "paneer-handi",
+          "name": "Paneer Handi",
+          "description": "Paneer simmered in rich onion-tomato gravy, handi style.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 179,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 309,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "पनीर हांडी"
+        },
+        {
+          "id": "paneer-kadahi",
+          "name": "Paneer Kadahi",
+          "description": "Paneer cooked with capsicum and onion in kadahi masala.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 189,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 319,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "पनीर कढ़ाई"
+        },
+        {
+          "id": "paneer-hyderbadi",
+          "name": "Paneer Hyderbadi",
+          "description": "Paneer cooked in a spicy Hyderabadi-style curry.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 189,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 319,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "पनीर हैदराबादी"
+        },
+        {
+          "id": "paneer-do-payaza",
+          "name": "Paneer Do Payaza",
+          "description": "Paneer cooked with double portions of onion in gravy.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 189,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 319,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "पनीर दो प्याज़ा"
+        },
+        {
+          "id": "paneer-matar",
+          "name": "Paneer Matar",
+          "description": "Paneer and green peas cooked in tomato gravy.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 169,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 299,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "पनीर मटर"
+        },
+        {
+          "id": "paneer-methi",
+          "name": "Paneer Methi",
+          "description": "Paneer cooked with fenugreek leaves in spiced gravy.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 199,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 359,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "पनीर मेथी"
+        },
+        {
+          "id": "paneer-lababdar",
+          "name": "Paneer Lababdar",
+          "description": "Paneer in rich, creamy tomato-based gravy.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 209,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 369,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "पनीर लबाबदार"
+        },
+        {
+          "id": "paneer-butter",
+          "name": "Paneer Butter",
+          "description": "Paneer simmered in buttery tomato and cashew gravy.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 199,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 339,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "पनीर बटर"
+        },
+        {
+          "id": "paneer-kalimirch",
+          "name": "Paneer Kalimirch",
+          "description": "Paneer cooked in creamy gravy with crushed black pepper.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 219,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 379,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "पनीर कालीमिर्च"
+        },
+        {
+          "id": "paneer-punjabi",
+          "name": "Paneer Punjabi",
+          "description": "Paneer cooked in traditional Punjabi-style spiced gravy.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 219,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 379,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "पनीर पंजाबी"
+        },
+        {
+          "id": "paneer-afgani",
+          "name": "Paneer Afgani",
+          "description": "Paneer in creamy, mildly spiced Afghani-style gravy.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 239,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 429,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "पनीर अफगानी"
+        },
+        {
+          "id": "paneer-shahi",
+          "name": "Paneer Shahi",
+          "description": "Paneer cooked in rich, royal creamy nut-based gravy.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 209,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 369,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "पनीर शाही"
+        },
+        {
+          "id": "paneer-pasanda-special",
+          "name": "Paneer Pasanda Special",
+          "description": "Paneer cooked in special creamy pasanda gravy.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 209,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 369,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "पनीर पसंदा स्पेशल"
+        },
+        {
+          "id": "paneer-bhujia",
+          "name": "Paneer Bhujia",
+          "description": "Paneer cooked with dry spices in a semi-thick gravy.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 219,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 379,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "पनीर भुजिया"
+        },
+        {
+          "id": "paneer-malwani",
+          "name": "Paneer Malwani",
+          "description": "Paneer cooked in spicy coconut-based Malwani gravy.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 279,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 459,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "पनीर मालवणी"
+        },
+        {
+          "id": "paneer-palak",
+          "name": "Paneer Palak (Seasonal)",
+          "description": "Paneer cooked in creamy spinach gravy.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 179,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 309,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "पनीर पालक (सीज़नल)"
+        },
+        {
+          "id": "mushroom-butter-masala",
+          "name": "Mushroom Butter Masala",
+          "description": "Mushrooms simmered in buttery tomato gravy.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 179,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 309,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "मशरूम बटर मसाला"
+        },
+        {
+          "id": "mushroom-do-pyaza",
+          "name": "Mushroom Do Pyaza",
+          "description": "Mushrooms cooked with double portions of onion in gravy.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 169,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 299,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "मशरूम दो प्याज़ा"
+        },
+        {
+          "id": "mushroom-matar",
+          "name": "Mushroom Matar",
+          "description": "Mushrooms and green peas cooked in tomato gravy.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 159,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 289,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "मशरूम मटर"
+        },
+        {
+          "id": "mushroom-kalimirch",
+          "name": "Mushroom Kalimirch",
+          "description": "Mushrooms cooked in creamy gravy with crushed black pepper.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 199,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 339,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "मशरूम कालीमिर्च"
+        },
+        {
+          "id": "mushroom-handi",
+          "name": "Mushroom Handi",
+          "description": "Mushrooms simmered in onion-tomato gravy, handi style.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 169,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 299,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "मशरूम हांडी"
+        },
+        {
+          "id": "mushroom-malwani",
+          "name": "Mushroom Malwani",
+          "description": "Mushrooms cooked in spicy coconut-based Malwani gravy.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 199,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 339,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "मशरूम मालवणी"
+        },
+        {
+          "id": "aloo-dum-kashmiri",
+          "name": "Aloo Dum Kashmiri",
+          "description": "Baby potatoes cooked in Kashmiri-style spiced gravy.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 169,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 299,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "आलू दम कश्मीरी"
+        },
+        {
+          "id": "aloo-jeera",
+          "name": "Aloo Jeera",
+          "description": "Potatoes tempered with cumin seeds and mild spices.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 109,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 199,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "आलू जीरा"
+        },
+        {
+          "id": "vegetable-mix",
+          "name": "Vegetable Mix.",
+          "description": "Assorted seasonal vegetables cooked in spiced gravy.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 159,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 269,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "वेजिटेबल मिक्स"
+        },
+        {
+          "id": "kofta-malai",
+          "name": "Kofta Malai",
+          "description": "Vegetable dumplings in creamy, mildly sweet gravy.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 199,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 339,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "कोफ्ता मलाई"
+        },
+        {
+          "id": "bhindi-masala",
+          "name": "Bhindi Masala (Seasonal)",
+          "description": "Okra cooked with onion and tomato masala.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 159,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 269,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "भिंडी मसाला (सीज़नल)"
+        },
+        {
+          "id": "veg-kolhapuri",
+          "name": "Veg. Kolhapuri",
+          "description": "Mixed vegetables cooked in spicy Kolhapuri-style gravy.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 169,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 299,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "वेज कोल्हापुरी"
+        },
+        {
+          "id": "chana-masala",
+          "name": "Chana Masala",
+          "description": "Chickpeas cooked in spiced onion-tomato masala.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 199,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 339,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 18,
+          "photo": "placeholder",
+          "nameHi": "चना मसाला"
+        }
+      ]
+    },
+    {
+      "id": "dal",
+      "name": "Dal",
+      "note": "Full category included — only 3 items exist.",
+      "items": [
+        {
+          "id": "dal-fry",
+          "name": "Dal Fry",
+          "description": "Yellow lentils tempered with spices and ghee.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 119,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 199,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 14,
+          "photo": "placeholder",
+          "nameHi": "दाल फ्राई"
+        },
+        {
+          "id": "dal-tadka-deshi-ghee",
+          "name": "Dal Tadka Deshi Ghee",
+          "description": "Lentils tempered with desi ghee and aromatic spices.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 139,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 229,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 14,
+          "photo": "placeholder",
+          "nameHi": "दाल तड़का देसी घी"
+        },
+        {
+          "id": "dal-makhani",
+          "name": "Dal Makhani",
+          "description": "Black lentils simmered slowly in creamy buttery gravy.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 149,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 279,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 14,
+          "photo": "placeholder",
+          "nameHi": "दाल मखनी"
+        }
+      ]
+    },
+    {
+      "id": "main-course-non-veg",
+      "name": "Main Course Non-Veg.",
+      "items": [
+        {
+          "id": "chicken-punjabi-curry",
+          "name": "Chicken Punjabi Curry",
+          "description": "Chicken cooked in traditional Punjabi-style spiced gravy.",
+          "variants": [
+            {
+              "name": "02 Pcs (Half)",
+              "price": 189,
+              "veg": false,
+              "nameHi": "02 पीस (हाफ)"
+            },
+            {
+              "name": "04 Pcs (Full)",
+              "price": 359,
+              "veg": false,
+              "nameHi": "04 पीस (फुल)"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "चिकन पंजाबी करी"
+        },
+        {
+          "id": "chicken-butter",
+          "name": "Chicken Butter",
+          "description": "Chicken simmered in buttery tomato and cashew gravy.",
+          "variants": [
+            {
+              "name": "03 Pcs (Half)",
+              "price": 309,
+              "veg": false,
+              "nameHi": "03 पीस (हाफ)"
+            },
+            {
+              "name": "06 Pcs (Full)",
+              "price": 579,
+              "veg": false,
+              "nameHi": "06 पीस (फुल)"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "चिकन बटर"
+        },
+        {
+          "id": "chicken-kali-mirch",
+          "name": "Chicken Kali Mirch",
+          "description": "Chicken cooked in creamy gravy with crushed black pepper.",
+          "variants": [
+            {
+              "name": "03 Pcs (Half)",
+              "price": 329,
+              "veg": false,
+              "nameHi": "03 पीस (हाफ)"
+            },
+            {
+              "name": "06 Pcs (Full)",
+              "price": 619,
+              "veg": false,
+              "nameHi": "06 पीस (फुल)"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "चिकन कालीमिर्च"
+        },
+        {
+          "id": "chicken-kadahi",
+          "name": "Chicken Kadahi",
+          "description": "Chicken cooked with capsicum and onion in kadahi masala.",
+          "variants": [
+            {
+              "name": "03 Pcs (Half)",
+              "price": 329,
+              "veg": false,
+              "nameHi": "03 पीस (हाफ)"
+            },
+            {
+              "name": "06 Pcs (Full)",
+              "price": 619,
+              "veg": false,
+              "nameHi": "06 पीस (फुल)"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "चिकन कढ़ाई"
+        },
+        {
+          "id": "chicken-tawa",
+          "name": "Chicken Tawa",
+          "description": "Chicken cooked on a flat griddle with spices.",
+          "variants": [
+            {
+              "name": "03 Pcs (Half)",
+              "price": 289,
+              "veg": false,
+              "nameHi": "03 पीस (हाफ)"
+            },
+            {
+              "name": "06 Pcs (Full)",
+              "price": 600,
+              "veg": false,
+              "nameHi": "06 पीस (फुल)"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "चिकन तवा"
+        },
+        {
+          "id": "chicken-do-payaza-main",
+          "name": "Chicken Do Payaza",
+          "description": "Chicken cooked with double portions of onion in gravy.",
+          "variants": [
+            {
+              "name": "02 Pcs (Half)",
+              "price": 189,
+              "veg": false,
+              "nameHi": "02 पीस (हाफ)"
+            },
+            {
+              "name": "04 Pcs (Full)",
+              "price": 359,
+              "veg": false,
+              "nameHi": "04 पीस (फुल)"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "चिकन दो प्याज़ा"
+        },
+        {
+          "id": "chicken-handi",
+          "name": "Chicken Handi",
+          "description": "Chicken simmered in onion-tomato gravy, handi style.",
+          "variants": [
+            {
+              "name": "02 Pcs (Half)",
+              "price": 199,
+              "veg": false,
+              "nameHi": "02 पीस (हाफ)"
+            },
+            {
+              "name": "04 Pcs (Full)",
+              "price": 369,
+              "veg": false,
+              "nameHi": "04 पीस (फुल)"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "चिकन हांडी"
+        },
+        {
+          "id": "chicken-methi",
+          "name": "Chicken Methi",
+          "description": "Chicken cooked with fenugreek leaves in spiced gravy.",
+          "variants": [
+            {
+              "name": "03 Pcs (Half)",
+              "price": 329,
+              "veg": false,
+              "nameHi": "03 पीस (हाफ)"
+            },
+            {
+              "name": "06 Pcs (Full)",
+              "price": 619,
+              "veg": false,
+              "nameHi": "06 पीस (फुल)"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "चिकन मेथी"
+        },
+        {
+          "id": "chicken-curry-homestyle",
+          "name": "Chicken Curry Homestyle",
+          "description": "Chicken cooked in traditional home-style curry gravy.",
+          "variants": [
+            {
+              "name": "03 Pcs (Half)",
+              "price": 309,
+              "veg": false,
+              "nameHi": "03 पीस (हाफ)"
+            },
+            {
+              "name": "06 Pcs (Full)",
+              "price": 579,
+              "veg": false,
+              "nameHi": "06 पीस (फुल)"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "चिकन करी होमस्टाइल"
+        },
+        {
+          "id": "chicken-lababdar",
+          "name": "Chicken Lababdar",
+          "description": "Chicken in rich, creamy tomato-based gravy.",
+          "variants": [
+            {
+              "name": "03 Pcs (Half)",
+              "price": 329,
+              "veg": false,
+              "nameHi": "03 पीस (हाफ)"
+            },
+            {
+              "name": "06 Pcs (Full)",
+              "price": 619,
+              "veg": false,
+              "nameHi": "06 पीस (फुल)"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "चिकन लबाबदार"
+        },
+        {
+          "id": "chicken-korma",
+          "name": "Chicken Korma",
+          "description": "Chicken cooked in mild, creamy korma gravy.",
+          "variants": [
+            {
+              "name": "02 Pcs (Half)",
+              "price": 209,
+              "veg": false,
+              "nameHi": "02 पीस (हाफ)"
+            },
+            {
+              "name": "04 Pcs (Full)",
+              "price": 399,
+              "veg": false,
+              "nameHi": "04 पीस (फुल)"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "चिकन कोरमा"
+        },
+        {
+          "id": "chicken-malwani",
+          "name": "Chicken Malwani",
+          "description": "Chicken cooked in spicy coconut-based Malwani gravy.",
+          "variants": [
+            {
+              "name": "03 Pcs (Half)",
+              "price": 349,
+              "veg": false,
+              "nameHi": "03 पीस (हाफ)"
+            },
+            {
+              "name": "06 Pcs (Full)",
+              "price": 639,
+              "veg": false,
+              "nameHi": "06 पीस (फुल)"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "चिकन मालवणी"
+        },
+        {
+          "id": "egg-curry",
+          "name": "Egg Curry 02 Pcs",
+          "description": "Boiled eggs simmered in spiced onion-tomato gravy.",
+          "price": 109,
+          "veg": false,
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "अंडा करी 02 पीस"
+        },
+        {
+          "id": "fish-tomato",
+          "name": "Fish Tomato",
+          "description": "Fish cooked in tangy tomato-based gravy.",
+          "variants": [
+            {
+              "name": "02 Pcs (Half)",
+              "price": 189,
+              "veg": false,
+              "nameHi": "02 पीस (हाफ)"
+            },
+            {
+              "name": "04 Pcs (Full)",
+              "price": 319,
+              "veg": false,
+              "nameHi": "04 पीस (फुल)"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "फिश टमाटर"
+        },
+        {
+          "id": "fish-curry",
+          "name": "Fish Curry",
+          "description": "Fish simmered in traditional spiced curry gravy.",
+          "variants": [
+            {
+              "name": "02 Pcs (Half)",
+              "price": 169,
+              "veg": false,
+              "nameHi": "02 पीस (हाफ)"
+            },
+            {
+              "name": "04 Pcs (Full)",
+              "price": 319,
+              "veg": false,
+              "nameHi": "04 पीस (फुल)"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "फिश करी"
+        },
+        {
+          "id": "fish-masala",
+          "name": "Fish Masala",
+          "description": "Fish cooked in thick, spiced masala gravy.",
+          "variants": [
+            {
+              "name": "02 Pcs (Half)",
+              "price": 179,
+              "veg": false,
+              "nameHi": "02 पीस (हाफ)"
+            },
+            {
+              "name": "04 Pcs (Full)",
+              "price": 329,
+              "veg": false,
+              "nameHi": "04 पीस (फुल)"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "फिश मसाला"
+        },
+        {
+          "id": "mutton-handi",
+          "name": "Mutton Handi",
+          "description": "Mutton simmered in onion-tomato gravy, handi style.",
+          "variants": [
+            {
+              "name": "02 Pcs (Half)",
+              "price": 239,
+              "veg": false,
+              "nameHi": "02 पीस (हाफ)"
+            },
+            {
+              "name": "04 Pcs (Full)",
+              "price": 399,
+              "veg": false,
+              "nameHi": "04 पीस (फुल)"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "मटन हांडी"
+        },
+        {
+          "id": "mutton-kadahi",
+          "name": "Mutton Kadahi",
+          "description": "Mutton cooked with capsicum and onion in kadahi masala.",
+          "variants": [
+            {
+              "name": "02 Pcs (Half)",
+              "price": 249,
+              "veg": false,
+              "nameHi": "02 पीस (हाफ)"
+            },
+            {
+              "name": "04 Pcs (Full)",
+              "price": 419,
+              "veg": false,
+              "nameHi": "04 पीस (फुल)"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "मटन कढ़ाई"
+        },
+        {
+          "id": "mutton-punjabi",
+          "name": "Mutton Punjabi",
+          "description": "Mutton cooked in traditional Punjabi-style spiced gravy.",
+          "variants": [
+            {
+              "name": "02 Pcs (Half)",
+              "price": 239,
+              "veg": false,
+              "nameHi": "02 पीस (हाफ)"
+            },
+            {
+              "name": "04 Pcs (Full)",
+              "price": 449,
+              "veg": false,
+              "nameHi": "04 पीस (फुल)"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "मटन पंजाबी"
+        },
+        {
+          "id": "mutton-do-pyaja",
+          "name": "Mutton Do Pyaja",
+          "description": "Mutton cooked with double portions of onion in gravy.",
+          "variants": [
+            {
+              "name": "02 Pcs (Half)",
+              "price": 239,
+              "veg": false,
+              "nameHi": "02 पीस (हाफ)"
+            },
+            {
+              "name": "04 Pcs (Full)",
+              "price": 429,
+              "veg": false,
+              "nameHi": "04 पीस (फुल)"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "मटन दो प्याज़ा"
+        },
+        {
+          "id": "mutton-sultani",
+          "name": "Mutton Sultani",
+          "description": "Mutton cooked in rich, royal spiced gravy.",
+          "variants": [
+            {
+              "name": "02 Pcs (Half)",
+              "price": 239,
+              "veg": false,
+              "nameHi": "02 पीस (हाफ)"
+            },
+            {
+              "name": "04 Pcs (Full)",
+              "price": 429,
+              "veg": false,
+              "nameHi": "04 पीस (फुल)"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "मटन सुल्तानी"
+        },
+        {
+          "id": "mutton-golden-dehati",
+          "name": "Mutton Golden Dehati",
+          "description": "Mutton cooked in rustic, village-style spiced gravy.",
+          "variants": [
+            {
+              "name": "03 Pcs (Half)",
+              "price": 349,
+              "veg": false,
+              "nameHi": "03 पीस (हाफ)"
+            },
+            {
+              "name": "06 Pcs (Full)",
+              "price": 669,
+              "veg": false,
+              "nameHi": "06 पीस (फुल)"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "मटन गोल्डन देहाती"
+        }
+      ]
+    },
+    {
+      "id": "roti",
+      "name": "Roti",
+      "items": [
+        {
+          "id": "tawa-roti",
+          "name": "Tawa Roti",
+          "description": "",
+          "price": 10,
+          "veg": true,
+          "prepTimeMinutes": 8,
+          "photo": "placeholder",
+          "nameHi": "तवा रोटी"
+        },
+        {
+          "id": "tawa-roti-butter",
+          "name": "Tawa Roti Butter",
+          "description": "",
+          "price": 15,
+          "veg": true,
+          "prepTimeMinutes": 8,
+          "photo": "placeholder",
+          "nameHi": "तवा रोटी बटर"
+        },
+        {
+          "id": "tandoori-roti",
+          "name": "Tandoori Roti",
+          "description": "",
+          "price": 19,
+          "veg": true,
+          "prepTimeMinutes": 8,
+          "photo": "placeholder",
+          "nameHi": "तंदूरी रोटी"
+        },
+        {
+          "id": "tandoori-roti-butter",
+          "name": "Tandoori Roti Butter",
+          "description": "",
+          "price": 25,
+          "veg": true,
+          "prepTimeMinutes": 8,
+          "photo": "placeholder",
+          "nameHi": "तंदूरी रोटी बटर"
+        },
+        {
+          "id": "missi-roti-butter",
+          "name": "Missi Roti Butter",
+          "description": "",
+          "price": 35,
+          "veg": true,
+          "prepTimeMinutes": 8,
+          "photo": "placeholder",
+          "nameHi": "मिस्सी रोटी बटर"
+        },
+        {
+          "id": "naan-plain",
+          "name": "Naan Plain",
+          "description": "",
+          "price": 49,
+          "veg": true,
+          "prepTimeMinutes": 8,
+          "photo": "placeholder",
+          "nameHi": "नान प्लेन"
+        },
+        {
+          "id": "naan-butter",
+          "name": "Naan Butter",
+          "description": "",
+          "price": 59,
+          "veg": true,
+          "prepTimeMinutes": 8,
+          "photo": "placeholder",
+          "nameHi": "नान बटर"
+        },
+        {
+          "id": "naan-garlic-cheese",
+          "name": "Naan Garlic Cheese",
+          "description": "",
+          "price": 89,
+          "veg": true,
+          "prepTimeMinutes": 8,
+          "photo": "placeholder",
+          "nameHi": "नान गार्लिक चीज़"
+        },
+        {
+          "id": "paratha",
+          "name": "Paratha",
+          "description": "",
+          "price": 35,
+          "veg": true,
+          "prepTimeMinutes": 8,
+          "photo": "placeholder",
+          "nameHi": "पराठा"
+        },
+        {
+          "id": "laccha-paratha",
+          "name": "Laccha Paratha",
+          "description": "",
+          "price": 49,
+          "veg": true,
+          "prepTimeMinutes": 8,
+          "photo": "placeholder",
+          "nameHi": "लच्छा पराठा"
+        },
+        {
+          "id": "onion-paratha",
+          "name": "Onion Paratha",
+          "description": "",
+          "price": 39,
+          "veg": true,
+          "prepTimeMinutes": 8,
+          "photo": "placeholder",
+          "nameHi": "प्याज़ पराठा"
+        },
+        {
+          "id": "paratha-with-curd",
+          "name": "Paratha with Curd 02 Pcs",
+          "description": "",
+          "price": 99,
+          "veg": true,
+          "prepTimeMinutes": 8,
+          "photo": "placeholder",
+          "nameHi": "पराठा विद कर्ड 02 पीस"
+        },
+        {
+          "id": "paratha-aloo-with-curd",
+          "name": "Paratha Aloo with Curd 02 Pcs",
+          "description": "",
+          "price": 119,
+          "veg": true,
+          "prepTimeMinutes": 8,
+          "photo": "placeholder",
+          "nameHi": "आलू पराठा विद कर्ड 02 पीस"
+        },
+        {
+          "id": "paratha-paneer-with-curd",
+          "name": "Paratha Paneer with Curd 02 Pcs",
+          "description": "",
+          "price": 179,
+          "veg": true,
+          "prepTimeMinutes": 8,
+          "photo": "placeholder",
+          "nameHi": "पनीर पराठा विद कर्ड 02 पीस"
+        },
+        {
+          "id": "paratha-veg-with-curd",
+          "name": "Paratha Veg. with Curd 02 Pcs",
+          "description": "",
+          "price": 160,
+          "veg": true,
+          "prepTimeMinutes": 8,
+          "photo": "placeholder",
+          "nameHi": "वेज पराठा विद कर्ड 02 पीस"
+        },
+        {
+          "id": "egg-paratha",
+          "name": "Egg Paratha",
+          "description": "",
+          "price": 79,
+          "veg": false,
+          "prepTimeMinutes": 8,
+          "photo": "placeholder",
+          "nameHi": "अंडा पराठा"
+        }
+      ]
+    },
+    {
+      "id": "rice-biryani",
+      "name": "Rice / Biryani",
+      "items": [
+        {
+          "id": "jeera-rice",
+          "name": "Jeera Rice",
+          "description": "",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 75,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 139,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "जीरा राइस"
+        },
+        {
+          "id": "steam-rice",
+          "name": "Steam Rice",
+          "description": "",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 59,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 110,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "स्टीम राइस"
+        },
+        {
+          "id": "veg-pulao",
+          "name": "Veg Pulao/Peas Pulao",
+          "description": "",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 89,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 159,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "वेज पुलाव/मटर पुलाव"
+        },
+        {
+          "id": "veg-biryani",
+          "name": "Veg Biryani",
+          "description": "Basmati rice layered and cooked with mixed vegetables and spices.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 129,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 219,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "वेज बिरयानी"
+        },
+        {
+          "id": "veg-hyderabadi-biryani",
+          "name": "Veg. Hyderabadi Biryani",
+          "description": "Vegetable biryani cooked in aromatic Hyderabadi-style spices.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 149,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 279,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "वेज हैदराबादी बिरयानी"
+        },
+        {
+          "id": "paneer-biryani",
+          "name": "Paneer Biryani",
+          "description": "Basmati rice layered and cooked with paneer and spices.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 119,
+              "veg": true,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 219,
+              "veg": true,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "पनीर बिरयानी"
+        },
+        {
+          "id": "mutton-biryani",
+          "name": "Mutton Biryani",
+          "description": "Basmati rice layered and slow-cooked with mutton and spices.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 199,
+              "veg": false,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 319,
+              "veg": false,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "मटन बिरयानी"
+        },
+        {
+          "id": "chicken-dum-biryani",
+          "name": "Chicken Dum Biryani",
+          "description": "Basmati rice and chicken slow-cooked together in sealed handi.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 119,
+              "veg": false,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 219,
+              "veg": false,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "चिकन दम बिरयानी"
+        },
+        {
+          "id": "hyderabadi-biryani",
+          "name": "Hyderabadi Biryani",
+          "description": "Rice and meat cooked in traditional Hyderabadi dum style.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 129,
+              "veg": false,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 209,
+              "veg": false,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "हैदराबादी बिरयानी"
+        },
+        {
+          "id": "chicken-biryani",
+          "name": "Chicken Biryani",
+          "description": "Basmati rice layered and cooked with chicken and spices.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 99,
+              "veg": false,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 199,
+              "veg": false,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "चिकन बिरयानी"
+        },
+        {
+          "id": "egg-biryani",
+          "name": "Egg Biryani",
+          "description": "Basmati rice layered and cooked with boiled eggs and spices.",
+          "variants": [
+            {
+              "name": "Half",
+              "price": 109,
+              "veg": false,
+              "nameHi": "हाफ"
+            },
+            {
+              "name": "Full",
+              "price": 199,
+              "veg": false,
+              "nameHi": "फुल"
+            }
+          ],
+          "prepTimeMinutes": 20,
+          "photo": "placeholder",
+          "nameHi": "अंडा बिरयानी"
+        }
+      ]
+    },
+    {
+      "id": "desserts",
+      "name": "Desserts",
+      "note": "Full category included — only 1 item exists.",
+      "items": [
+        {
+          "id": "gulab-jamun",
+          "name": "Gulab Jamun 02 Pcs",
+          "description": "",
+          "price": 69,
+          "veg": true,
+          "prepTimeMinutes": 4,
+          "photo": "placeholder",
+          "nameHi": "गुलाब जामुन 02 पीस"
+        }
+      ]
+    },
+    {
+      "id": "ice-cream",
+      "name": "Ice Cream",
+      "note": "Full category included — only 3 items exist.",
+      "items": [
+        {
+          "id": "vanilla-ice-cream",
+          "name": "Vanilla",
+          "description": "",
+          "price": 79,
+          "veg": true,
+          "prepTimeMinutes": 3,
+          "photo": "placeholder",
+          "nameHi": "वनीला"
+        },
+        {
+          "id": "chocolate-ice-cream",
+          "name": "Chocolate",
+          "description": "",
+          "price": 79,
+          "veg": true,
+          "prepTimeMinutes": 3,
+          "photo": "placeholder",
+          "nameHi": "चॉकलेट"
+        },
+        {
+          "id": "butter-scotch-ice-cream",
+          "name": "Butter Scotch",
+          "description": "",
+          "price": 99,
+          "veg": true,
+          "prepTimeMinutes": 3,
+          "photo": "placeholder",
+          "nameHi": "बटर स्कॉच"
+        }
+      ]
+    }
+  ]
+}

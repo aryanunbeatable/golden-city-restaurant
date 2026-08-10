@@ -1,26 +1,140 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * Golden City Restaurant brand palette, cross-checked against the imported
+ * design's actual CSS (Golden City Ordering.dc.html) rather than taken on
+ * faith — all 9 requested values matched the source exactly, no conflicts.
+ *
+ * "ink"/"muted" hold what the design brief calls text-primary/text-muted:
+ * naming the token "text-primary" would collide with the button "primary"
+ * (both would generate a `-primary` suffixed class) and produce the
+ * confusing `text-text-primary` utility. ink/muted sidestep that.
+ */
+@theme {
+  --color-primary: #8b1d0e; /* deep maroon — CTAs, active states */
+  --color-background: #fbf3e4; /* warm ivory */
+  --color-surface: #fffdf8; /* card surface */
+  --color-secondary: #d9a404; /* warm gold — Chef's Special, prep-time chips, in-progress */
+  --color-tertiary: #241c7a; /* deep navy — manager/kitchen secondary states */
+  --color-veg: #2e7d32;
+  --color-non-veg: #c62828;
+  --color-ink: #2a1b12; /* = text-primary */
+  --color-muted: #8a7a6b; /* = text-muted */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: var(--font-manrope), system-ui, sans-serif; /* body copy, labels */
+  --font-display: var(--font-yeseva), serif; /* restaurant name, section headings */
+  --font-devanagari: var(--font-manrope), var(--font-noto-devanagari), sans-serif; /* kitchen EN/हिं toggle */
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-background);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+/* Item modal entrance — bottom sheet (customer) / centered dialog (manager). */
+@keyframes gcSheet {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes gcPop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.animate-gc-sheet {
+  animation: gcSheet 0.32s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+.animate-gc-pop {
+  animation: gcPop 0.3s ease-out;
+}
+
+/* Order tracking screen — waiting / confirmed / preparing / ready. */
+@keyframes gcPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.09);
+    opacity: 1;
+  }
+}
+@keyframes gcRing {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.55);
+    opacity: 0;
+  }
+}
+@keyframes gcRise {
+  from {
+    transform: translateY(18px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes gcSimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+@keyframes gcConfetti {
+  0% {
+    transform: translateY(0) rotate(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(220px) rotate(320deg);
+    opacity: 0;
+  }
+}
+.animate-gc-pulse {
+  animation: gcPulse 1.8s ease-in-out infinite;
+}
+.animate-gc-ring {
+  animation: gcRing 2.2s ease-out infinite;
+}
+.animate-gc-ring-slow {
+  animation: gcRing 2.6s ease-out infinite;
+}
+.animate-gc-rise {
+  animation: gcRise 0.45s ease-out;
+}
+.animate-gc-simmer {
+  animation: gcSimmer 2.2s linear infinite;
+}
+.animate-gc-confetti {
+  animation: gcConfetti 2.4s ease-in infinite;
+}
+.animate-gc-pop-confirm {
+  animation: gcPop 0.5s cubic-bezier(0.2, 1.3, 0.4, 1);
+}
+.animate-gc-pop-ready {
+  animation: gcPop 0.55s cubic-bezier(0.2, 1.3, 0.4, 1);
+}
+.animate-gc-pop-sent {
+  animation: gcPop 0.4s ease-out;
 }
