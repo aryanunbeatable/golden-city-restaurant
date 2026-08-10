@@ -261,12 +261,12 @@ function OrderCard({
         <span className="ml-auto text-[10.5px] font-semibold text-muted">{since(order.created_at, now)}</span>
       </div>
 
-      <div className="flex flex-col gap-[5px] border-t border-dashed border-ink/[0.14] pt-2">
+      <div className="flex flex-col gap-2 border-t border-dashed border-ink/[0.14] pt-2.5">
         {order.order_items.map((it) => (
-          <div key={it.id} className="flex items-center gap-[7px]">
-            <span className="min-w-5 text-[11.5px] font-extrabold text-primary">{it.quantity}×</span>
-            <VegDot veg={it.is_veg} size={10} />
-            <span className="font-devanagari flex-1 text-[11.5px] leading-[1.35] font-semibold text-ink">
+          <div key={it.id} className="flex items-center gap-2">
+            <span className="min-w-6 text-base font-extrabold text-primary">{it.quantity}×</span>
+            <VegDot veg={it.is_veg} size={13} />
+            <span className="font-devanagari flex-1 text-lg leading-[1.3] font-bold text-ink">
               {orderLineLabel(it, lang === "hi")}
             </span>
           </div>
