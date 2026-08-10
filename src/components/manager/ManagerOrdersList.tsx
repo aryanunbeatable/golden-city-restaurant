@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { getSupabase } from "@/lib/supabase/client";
 import { since } from "@/lib/orders";
 import { isTableSource, sourceLabel, type OrderItemRow, type OrderRow, type OrderStatus } from "@/types/order";
+import { LiveClock } from "@/components/LiveClock";
 
 interface OrderWithItems extends OrderRow {
   order_items: OrderItemRow[];
@@ -18,6 +19,7 @@ const STATUS_STYLE: Record<OrderStatus, { label: string; className: string }> = 
   confirmed: { label: "Confirmed", className: "bg-tertiary text-surface" },
   preparing: { label: "Preparing", className: "bg-tertiary text-surface" },
   ready: { label: "Ready", className: "bg-primary text-surface" },
+  served: { label: "Served", className: "bg-veg text-surface" },
 };
 
 function summarize(items: OrderItemRow[]): string {
@@ -113,9 +115,10 @@ export function ManagerOrdersList() {
         <span className="rounded-md bg-tertiary px-2.5 py-1.5 text-[10px] font-bold tracking-[.14em] text-surface">
           COUNTER · ORDER ENTRY
         </span>
+        <LiveClock className="ml-auto text-[11px] font-semibold text-muted" />
         <Link
           href="/manager/new-order"
-          className="ml-auto rounded-lg border border-ink/[0.16] px-3 py-1.5 text-xs font-bold text-ink transition hover:border-primary hover:text-primary"
+          className="rounded-lg border border-ink/[0.16] px-3 py-1.5 text-xs font-bold text-ink transition hover:border-primary hover:text-primary"
         >
           + New order
         </Link>

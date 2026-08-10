@@ -7,6 +7,7 @@ import { ORDER_SOURCE_OPTIONS, type OrderSource } from "@/types/order";
 import { useCart, money } from "@/lib/cart";
 import { placeOrder } from "@/lib/orders";
 import { MenuBrowser } from "@/components/menu/MenuBrowser";
+import { LiveClock } from "@/components/LiveClock";
 
 // Matches the design's mNewTab + right-hand Kitchen token panel exactly.
 // Simplification: the design's full mDash wraps New order / Active orders in
@@ -58,9 +59,10 @@ export function ManagerNewOrderScreen({ menu }: { menu: Menu }) {
         <span className="rounded-md bg-tertiary px-2.5 py-1.5 text-[10px] font-bold tracking-[.14em] text-surface">
           COUNTER · ORDER ENTRY
         </span>
+        <LiveClock className="ml-auto text-[11px] font-semibold text-muted" />
         <Link
           href="/manager/orders"
-          className="ml-auto rounded-lg border border-ink/[0.16] px-3 py-1.5 text-xs font-bold text-ink transition hover:border-primary hover:text-primary"
+          className="rounded-lg border border-ink/[0.16] px-3 py-1.5 text-xs font-bold text-ink transition hover:border-primary hover:text-primary"
         >
           Active orders
         </Link>

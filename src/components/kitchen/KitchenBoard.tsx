@@ -4,9 +4,11 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabase } from "@/lib/supabase/client";
 import { since } from "@/lib/orders";
+import { businessDayCutoffMs, msUntilNextBusinessDay } from "@/lib/business-day";
 import { signOutKitchen } from "@/app/kitchen/actions";
 import { isTableSource, sourceLabel, type OrderItemRow, type OrderRow, type OrderStatus } from "@/types/order";
 import { VegDot } from "@/components/menu/ItemCard";
+import { LiveClock } from "@/components/LiveClock";
 
 interface OrderWithItems extends OrderRow {
   order_items: OrderItemRow[];
@@ -70,11 +72,10 @@ const COLUMNS: {
   },
 ];
 
-// Matches the design's kBoard kanban exactly. Deliberately omits the
-// design's "Served" button (which locally deleted the order) — this app has
-// no terminal status beyond 'ready' yet, so there's nothing real for it to
-// write; add a `served` status (or auto-expire old ready orders) before
-// bringing that control back.
+// Matches the design's kBoard kanban exactly, including the "Served" button
+// on ready cards — unlike the design (which just deleted the order client
+// side), this writes a real terminal `served` status, so the order stays in
+// the DB but drops out of every column's filter.
 export function KitchenBoard() {
   const router = useRouter();
   const [orders, setOrders] = useState<OrderWithItems[] | null>(null);
@@ -91,9 +92,11 @@ export function KitchenBoard() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      const cutoff = new Date(businessDayCutoffMs(Date.now())).toISOString();
       const { data, error } = await getSupabase()
         .from("orders")
         .select("*, order_items(*)")
+        .gte("created_at", cutoff)
         .order("created_at", { ascending: true });
       if (cancelled) return;
       if (error) setError(error.message);
@@ -104,6 +107,13 @@ export function KitchenBoard() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  // Kitchen day resets at 4AM IST: reload so the board re-fetches against the
+  // new day's cutoff and yesterday's orders fall off instead of piling up.
+  useEffect(() => {
+    const id = setTimeout(() => window.location.reload(), msUntilNextBusinessDay(Date.now()));
+    return () => clearTimeout(id);
   }, []);
 
   // Every order, any source — the single point where customer self-orders
@@ -147,6 +157,12 @@ export function KitchenBoard() {
     const { error } = await getSupabase().from("orders").update({ status: "ready" }).eq("id", id);
     if (error) setError(error.message);
   }
+  // No dedicated "served" column: this status simply drops the order out of
+  // every column's filter, which is the removal-from-the-board behavior.
+  async function markServed(id: string) {
+    const { error } = await getSupabase().from("orders").update({ status: "served" }).eq("id", id);
+    if (error) setError(error.message);
+  }
 
   function signOut() {
     startSignOutTransition(async () => {
@@ -181,7 +197,8 @@ export function KitchenBoard() {
             </button>
           ))}
         </div>
-        <span className="ml-auto text-[11.5px] font-semibold text-surface/75">
+        <LiveClock className="ml-auto text-[11px] font-semibold text-surface/75" />
+        <span className="text-[11.5px] font-semibold text-surface/75">
           {counts.new} new · {counts.cooking} cooking · {counts.ready} at the pass
         </span>
         <button
@@ -219,7 +236,15 @@ export function KitchenBoard() {
                     <span className="px-1 py-3 text-[11.5px] leading-[1.6] text-muted">{col.emptyText}</span>
                   )}
                   {colOrders.map((o) => (
-                    <OrderCard key={o.id} order={o} lang={lang} now={now} onAccept={accept} onMarkReady={markReady} />
+                    <OrderCard
+                      key={o.id}
+                      order={o}
+                      lang={lang}
+                      now={now}
+                      onAccept={accept}
+                      onMarkReady={markReady}
+                      onMarkServed={markServed}
+                    />
                   ))}
                 </div>
               </div>
@@ -237,12 +262,14 @@ function OrderCard({
   now,
   onAccept,
   onMarkReady,
+  onMarkServed,
 }: {
   order: OrderWithItems;
   lang: Lang;
   now: number;
   onAccept: (id: string) => void;
   onMarkReady: (id: string) => void;
+  onMarkServed: (id: string) => void;
 }) {
   const isNew = order.status === "waiting_confirmation";
   const isCooking = order.status === "confirmed" || order.status === "preparing";
@@ -298,6 +325,14 @@ function OrderCard({
             className="ml-auto rounded-[9px] bg-primary px-3.5 py-2.5 text-[11.5px] font-extrabold text-surface transition hover:bg-[#7A180B]"
           >
             Mark Ready
+          </button>
+        )}
+        {isDone && (
+          <button
+            onClick={() => onMarkServed(order.id)}
+            className="ml-auto rounded-[9px] bg-veg px-3.5 py-2.5 text-[11.5px] font-extrabold text-surface transition hover:bg-[#245f27]"
+          >
+            Served
           </button>
         )}
       </div>

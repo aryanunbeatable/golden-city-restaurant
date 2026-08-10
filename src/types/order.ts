@@ -1,5 +1,5 @@
 // Mirrors supabase/migrations/0001_orders.sql's enums/columns.
-export type OrderStatus = "waiting_confirmation" | "confirmed" | "preparing" | "ready";
+export type OrderStatus = "waiting_confirmation" | "confirmed" | "preparing" | "ready" | "served";
 export type OrderSource = "table_1" | "table_2" | "table_3" | "table_4" | "swiggy" | "zomato" | "parcel";
 export type PlacedBy = "customer" | "manager";
 
