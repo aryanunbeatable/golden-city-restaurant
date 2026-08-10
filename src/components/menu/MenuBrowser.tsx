@@ -129,7 +129,7 @@ export function MenuBrowser({
   const totals = cartTotals(cart);
 
   return (
-    <div className={`flex min-h-0 flex-col ${className}`}>
+    <div className={`flex min-h-0 ${density === "customer" ? "flex-col" : "flex-row"} ${className}`}>
       <div
         ref={barRef}
         className={
