@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getSupabase } from "@/lib/supabase/client";
 import { since } from "@/lib/orders";
+import { businessDayCutoffMs, msUntilNextBusinessDay } from "@/lib/business-day";
 import { isTableSource, sourceLabel, type OrderItemRow, type OrderRow, type OrderStatus } from "@/types/order";
 import { LiveClock } from "@/components/LiveClock";
 
@@ -49,10 +50,12 @@ export function ManagerOrdersList() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      const cutoff = new Date(businessDayCutoffMs(Date.now())).toISOString();
       const { data, error } = await getSupabase()
         .from("orders")
         .select("*, order_items(*)")
         .eq("placed_by", "manager")
+        .gte("created_at", cutoff)
         .order("created_at", { ascending: false });
       if (cancelled) return;
       if (error) setError(error.message);
@@ -63,6 +66,14 @@ export function ManagerOrdersList() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  // Same kitchen-day boundary as the kitchen board: reload at 4AM IST so this
+  // list re-fetches against the new day's cutoff instead of accumulating
+  // every order ever placed from the counter.
+  useEffect(() => {
+    const id = setTimeout(() => window.location.reload(), msUntilNextBusinessDay(Date.now()));
+    return () => clearTimeout(id);
   }, []);
 
   useEffect(() => {
