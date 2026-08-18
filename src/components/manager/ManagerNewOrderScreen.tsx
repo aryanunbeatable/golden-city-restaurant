@@ -30,6 +30,9 @@ export function ManagerNewOrderScreen({ menu }: { menu: Menu }) {
   const [error, setError] = useState<string | null>(null);
   // "later" = guest hasn't settled yet; recorded at the counter afterwards.
   const [payment, setPayment] = useState<PaymentMethod | "later">("later");
+  // Narrow screens have no room for a permanent side panel, so the kitchen
+  // token becomes a bottom sheet behind a summary bar. Ignored from md up.
+  const [panelOpen, setPanelOpen] = useState(false);
 
   const sourceLabel = ORDER_SOURCE_OPTIONS.find((s) => s.value === source)?.label ?? "";
   // Swiggy/Zomato settle through the platform, so there's nothing to ask.
@@ -50,6 +53,7 @@ export function ManagerNewOrderScreen({ menu }: { menu: Menu }) {
         paymentStatus: method ? "paid" : "pending",
       });
       setSentOrderId(orderId);
+      setPanelOpen(true); // so the confirmation isn't hidden behind the sheet
       cart.clear();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't send to kitchen — try again.");
@@ -62,6 +66,7 @@ export function ManagerNewOrderScreen({ menu }: { menu: Menu }) {
     setSentOrderId(null);
     setSource(null);
     setPayment("later");
+    setPanelOpen(false);
     setError(null);
   }
 
@@ -73,7 +78,7 @@ export function ManagerNewOrderScreen({ menu }: { menu: Menu }) {
 
       <div className="flex min-h-0 flex-1">
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex flex-none flex-wrap items-center gap-2.5 border-b border-ink/10 px-[18px] py-3.5">
+          <div className="flex flex-none flex-wrap items-center gap-2.5 border-b border-ink/10 px-4 py-3.5 md:px-[18px]">
             <span className="mr-1 text-[10.5px] font-bold tracking-[.14em] text-muted">ORDER SOURCE</span>
             {ORDER_SOURCE_OPTIONS.map((s) => (
               <button
@@ -114,7 +119,22 @@ export function ManagerNewOrderScreen({ menu }: { menu: Menu }) {
           )}
         </div>
 
-        <div className="flex w-[330px] flex-none flex-col border-l border-ink/10 bg-surface">
+        {/* Backdrop only exists while the mobile sheet is open. */}
+        {panelOpen && (
+          <button
+            aria-label="Close kitchen token"
+            onClick={() => setPanelOpen(false)}
+            className="fixed inset-0 z-30 bg-ink/40 md:hidden"
+          />
+        )}
+
+        <div
+          // The slide-up class goes on only while open — left on permanently it
+          // never restarts, and the sheet sits parked at translateY(100%).
+          className={`${
+            panelOpen ? "flex animate-gc-sheet" : "hidden"
+          } fixed inset-x-0 bottom-0 z-40 max-h-[80dvh] flex-col rounded-t-2xl border-t border-ink/10 bg-surface shadow-[0_-10px_30px_rgba(42,27,18,0.2)] md:static md:z-auto md:flex md:max-h-none md:w-[330px] md:flex-none md:animate-none md:rounded-none md:border-t-0 md:border-l md:shadow-none`}
+        >
           {sentOrderId ? (
             <div className="animate-gc-pop-sent flex flex-1 flex-col items-center justify-center gap-4 p-[26px] text-center">
               <span className="flex h-[78px] w-[78px] items-center justify-center rounded-full bg-veg text-4xl font-light text-surface">
@@ -141,11 +161,18 @@ export function ManagerNewOrderScreen({ menu }: { menu: Menu }) {
             </div>
           ) : (
             <>
-              <div className="flex flex-none items-center justify-between border-b border-ink/[0.09] px-4 pt-3.5 pb-2.5">
+              <div className="flex flex-none items-center gap-2 border-b border-ink/[0.09] px-4 pt-3.5 pb-2.5">
                 <span className="font-display text-[17px] text-primary">Kitchen token</span>
-                <span className="rounded-md bg-tertiary px-[9px] py-1.5 text-[10px] font-extrabold tracking-[.1em] text-surface">
+                <span className="ml-auto rounded-md bg-tertiary px-[9px] py-1.5 text-[10px] font-extrabold tracking-[.1em] text-surface">
                   {sourceLabel || "—"}
                 </span>
+                <button
+                  onClick={() => setPanelOpen(false)}
+                  aria-label="Close"
+                  className="-mr-1 px-1.5 text-lg font-bold text-muted md:hidden"
+                >
+                  ×
+                </button>
               </div>
 
               <div className="flex min-h-0 flex-1 flex-col gap-[7px] overflow-y-auto px-3.5 py-2.5">
@@ -244,6 +271,21 @@ export function ManagerNewOrderScreen({ menu }: { menu: Menu }) {
           )}
         </div>
       </div>
+
+      {/* Mobile-only handle for the token sheet — the counter terminal shows
+          the panel permanently and never needs this. */}
+      {source && !panelOpen && (
+        <button
+          onClick={() => setPanelOpen(true)}
+          className="fixed inset-x-0 bottom-0 z-20 flex items-center gap-3 border-t border-ink/10 bg-primary px-4 py-3.5 text-surface md:hidden"
+        >
+          <span className="flex h-[26px] min-w-[26px] items-center justify-center rounded-full bg-secondary px-1.5 text-xs font-extrabold text-ink">
+            {cart.totals.count}
+          </span>
+          <span className="text-[13px] font-bold">{sentOrderId ? "Token sent" : "Kitchen token"}</span>
+          <span className="ml-auto text-sm font-extrabold">{money(cart.totals.cost)}</span>
+        </button>
+      )}
     </main>
   );
 }

@@ -36,9 +36,9 @@ export function KitchenPinGate() {
   }
 
   return (
-    <main className="flex min-h-screen">
-      <div className="flex flex-1 flex-col justify-center gap-3.5 bg-tertiary px-[60px] text-surface">
-        <span className="font-display text-[42px] leading-[1.1]">
+    <main className="flex min-h-dvh flex-col md:flex-row">
+      <div className="flex flex-col justify-center gap-3.5 bg-tertiary px-8 py-8 text-surface md:flex-1 md:px-[60px] md:py-0">
+        <span className="font-display text-[32px] leading-[1.1] md:text-[42px]">
           Kitchen
           <br />
           Pass
@@ -52,7 +52,7 @@ export function KitchenPinGate() {
         </span>
       </div>
 
-      <div className="flex w-[440px] flex-none flex-col items-center justify-center gap-5 px-10">
+      <div className="flex w-full flex-1 flex-col items-center justify-center gap-5 px-6 py-8 md:w-[440px] md:flex-none md:px-10 md:py-0">
         <span className="text-[11px] font-bold tracking-[.18em] text-muted">ENTER KITCHEN PIN</span>
 
         <div className="flex gap-3">
@@ -73,7 +73,7 @@ export function KitchenPinGate() {
             <button
               key={k}
               onClick={() => press(k)}
-              className="h-[70px] w-[84px] rounded-[14px] border border-ink/[0.12] bg-surface text-[22px] font-semibold text-ink transition hover:border-tertiary hover:text-tertiary"
+              className="h-[70px] w-[74px] rounded-[14px] border border-ink/[0.12] bg-surface text-[22px] font-semibold text-ink transition hover:border-tertiary hover:text-tertiary sm:w-[84px]"
             >
               {k}
             </button>
@@ -83,7 +83,7 @@ export function KitchenPinGate() {
         <button
           onClick={unlock}
           disabled={pin.length !== 4 || pending}
-          className="w-[276px] rounded-[14px] bg-tertiary py-4 text-sm font-extrabold text-surface transition hover:bg-[#1B1560] disabled:cursor-not-allowed disabled:opacity-50"
+          className="w-full max-w-[276px] rounded-[14px] bg-tertiary py-4 text-sm font-extrabold text-surface transition hover:bg-[#1B1560] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {pending ? "Checking…" : "Open the board"}
         </button>

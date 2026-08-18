@@ -181,10 +181,12 @@ export function KitchenBoard() {
   };
 
   return (
-    <main className="flex h-screen flex-col overflow-hidden">
-      <div className="flex h-[54px] flex-none items-center gap-4 bg-tertiary px-[18px] text-surface">
+    <main className="flex h-dvh flex-col overflow-hidden">
+      <div className="flex min-h-[54px] flex-none flex-wrap items-center gap-x-4 gap-y-1.5 bg-tertiary px-3.5 py-2 text-surface md:flex-nowrap md:px-[18px] md:py-0">
         <span className="font-display text-[17px]">Kitchen Pass</span>
-        <span className="text-[10px] font-bold tracking-[.14em] text-secondary">LIVE ORDER BOARD</span>
+        <span className="hidden text-[10px] font-bold tracking-[.14em] text-secondary lg:inline">
+          LIVE ORDER BOARD
+        </span>
         <div className="flex gap-[3px] rounded-[9px] bg-black/26 p-[3px]">
           {(["en", "hi"] as const).map((l) => (
             <button
@@ -220,21 +222,23 @@ export function KitchenBoard() {
       ) : orders === null ? (
         <div className="flex flex-1 items-center justify-center text-sm text-muted">Loading…</div>
       ) : (
-        <div className="grid min-h-0 flex-1 grid-cols-3 gap-px bg-ink/[0.12]">
+        // One long scroll with sticky column headers on a phone; three
+        // independently-scrolling columns once there's width for them.
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-px overflow-y-auto bg-ink/[0.12] md:grid-cols-3 md:overflow-hidden">
           {COLUMNS.map((col) => {
             const colOrders = orders
               .filter((o) => col.statuses.includes(o.status))
               .sort((a, b) => a.created_at.localeCompare(b.created_at));
             return (
-              <div key={col.key} className="flex min-h-0 flex-col bg-background">
-                <div className="flex flex-none items-center gap-[9px] border-b border-ink/10 bg-surface px-3.5 py-[11px]">
+              <div key={col.key} className="flex flex-col bg-background md:min-h-0">
+                <div className="sticky top-0 z-10 flex flex-none items-center gap-[9px] border-b border-ink/10 bg-surface px-3.5 py-[11px] md:static">
                   <span className={`h-[9px] w-[9px] rounded-full ${col.dotClassName}`} />
                   <span className="text-[12.5px] font-extrabold tracking-[.06em] text-ink">{col.title}</span>
                   <span className="rounded-full bg-ink/[0.07] px-2 py-[5px] text-[10.5px] font-bold text-muted">
                     {colOrders.length}
                   </span>
                 </div>
-                <div className="flex min-h-0 flex-1 flex-col gap-[9px] overflow-y-auto p-2.5">
+                <div className="flex flex-col gap-[9px] p-2.5 md:min-h-0 md:flex-1 md:overflow-y-auto">
                   {colOrders.length === 0 && (
                     <span className="px-1 py-3 text-[11.5px] leading-[1.6] text-muted">{col.emptyText}</span>
                   )}

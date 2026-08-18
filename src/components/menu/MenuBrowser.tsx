@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Menu, MenuItem, MenuVariant } from "@/types/menu";
 import { cartTotals, decorateItem, lineKey, money, type CartLine } from "@/lib/cart";
 import { ItemCard } from "./ItemCard";
@@ -18,6 +18,24 @@ export interface MenuBrowserProps {
   /** Tap handler for the customer floating cart bar. No-op if omitted. */
   onOpenCart?: () => void;
   className?: string;
+}
+
+const WIDE_QUERY = "(min-width: 768px)";
+
+// useSyncExternalStore rather than an effect: matchMedia is exactly the
+// external store it's for, and it avoids a setState-in-effect on first paint.
+// The server snapshot assumes wide — the manager terminal is the common case,
+// and a narrow client corrects itself on hydration.
+function useIsWide(): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      const mq = window.matchMedia(WIDE_QUERY);
+      mq.addEventListener("change", onChange);
+      return () => mq.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia(WIDE_QUERY).matches,
+    () => true,
+  );
 }
 
 // Renders its own tabs (flex-none) above a scrolling item list (flex-1) —
@@ -46,7 +64,11 @@ export function MenuBrowser({
     if (rafId.current != null) cancelAnimationFrame(rafId.current);
   }, []);
 
-  const axis: "x" | "y" = density === "customer" ? "x" : "y";
+  // The manager's category rail is a vertical sidebar only when there's width
+  // for it; on a narrow screen it becomes a horizontal strip like the
+  // customer's, so the scroll-sync has to follow the same axis.
+  const isWide = useIsWide();
+  const axis: "x" | "y" = density === "manager" && isWide ? "y" : "x";
 
   // Ported exactly from the design's syncBar(): after either a tap-jump or a
   // scroll-driven category change, keep the active tab visible in its bar.
@@ -129,13 +151,13 @@ export function MenuBrowser({
   const totals = cartTotals(cart);
 
   return (
-    <div className={`flex min-h-0 ${density === "customer" ? "flex-col" : "flex-row"} ${className}`}>
+    <div className={`flex min-h-0 ${density === "customer" ? "flex-col" : "flex-col md:flex-row"} ${className}`}>
       <div
         ref={barRef}
         className={
           density === "customer"
             ? "flex flex-none gap-[7px] overflow-x-auto border-b border-ink/[0.09] bg-background px-[18px] py-3 pb-[11px]"
-            : "flex w-[196px] flex-none flex-col gap-0.5 overflow-y-auto border-r border-ink/10 bg-surface p-2"
+            : "flex w-full flex-none gap-1.5 overflow-x-auto border-b border-ink/10 bg-surface p-2 md:w-[196px] md:flex-col md:gap-0.5 md:overflow-x-visible md:overflow-y-auto md:border-r md:border-b-0"
         }
       >
         {decoratedCategories.map((cat) => {
@@ -153,8 +175,8 @@ export function MenuBrowser({
                     ? "flex-none whitespace-nowrap rounded-full bg-primary px-[13px] py-2 text-[11.5px] font-bold text-surface"
                     : "flex-none whitespace-nowrap rounded-full border border-ink/[0.14] bg-surface px-[13px] py-2 text-[11.5px] font-semibold text-ink transition hover:border-primary hover:text-primary"
                   : isActive
-                    ? "flex items-center justify-between gap-1.5 rounded-lg bg-primary/10 px-[11px] py-[10px] text-left text-xs font-extrabold text-primary"
-                    : "flex items-center justify-between gap-1.5 rounded-lg px-[11px] py-[10px] text-left text-xs font-semibold text-ink transition hover:bg-ink/5"
+                    ? "flex flex-none items-center justify-between gap-1.5 whitespace-nowrap rounded-lg bg-primary/10 px-[11px] py-[10px] text-left text-xs font-extrabold text-primary md:w-full"
+                    : "flex flex-none items-center justify-between gap-1.5 whitespace-nowrap rounded-lg px-[11px] py-[10px] text-left text-xs font-semibold text-ink transition hover:bg-ink/5 md:w-full"
               }
             >
               <span>{cat.name}</span>
@@ -174,7 +196,8 @@ export function MenuBrowser({
         className={
           density === "customer"
             ? "relative min-h-0 flex-1 overflow-y-auto px-4 pb-[120px]"
-            : "relative min-h-0 flex-1 overflow-y-auto p-3.5"
+            : // extra bottom room on mobile so the fixed token bar doesn't cover the last row
+              "relative min-h-0 flex-1 overflow-y-auto p-3.5 pb-24 md:pb-3.5"
         }
       >
         {decoratedCategories.map((cat) => (
@@ -194,7 +217,11 @@ export function MenuBrowser({
             ) : (
               <div className="font-display pb-3 text-xl text-primary">{cat.name}</div>
             )}
-            <div className={density === "customer" ? "flex flex-col gap-[11px]" : "grid grid-cols-2 gap-2"}>
+            <div
+              className={
+                density === "customer" ? "flex flex-col gap-[11px]" : "grid grid-cols-1 gap-2 sm:grid-cols-2"
+              }
+            >
               {cat.items.map((item) => (
                 <ItemCard
                   key={item.id}
