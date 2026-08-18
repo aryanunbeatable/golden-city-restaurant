@@ -6,13 +6,16 @@ import { getSupabase } from "@/lib/supabase/client";
 import { since } from "@/lib/orders";
 import { businessDayCutoffMs, msUntilNextBusinessDay } from "@/lib/business-day";
 import { signOutKitchen } from "@/app/kitchen/actions";
-import { isTableSource, sourceLabel, type OrderItemRow, type OrderRow, type OrderStatus } from "@/types/order";
+import {
+  isTableSource,
+  sourceLabel,
+  type OrderItemRow,
+  type OrderRow,
+  type OrderStatus,
+  type OrderWithItems,
+} from "@/types/order";
 import { VegDot } from "@/components/menu/ItemCard";
 import { LiveClock } from "@/components/LiveClock";
-
-interface OrderWithItems extends OrderRow {
-  order_items: OrderItemRow[];
-}
 
 type Lang = "en" | "hi";
 

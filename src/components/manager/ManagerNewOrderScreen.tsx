@@ -3,11 +3,19 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { Menu } from "@/types/menu";
-import { ORDER_SOURCE_OPTIONS, type OrderSource } from "@/types/order";
+import {
+  COUNTER_PAYMENT_OPTIONS,
+  ORDER_SOURCE_OPTIONS,
+  PAYMENT_METHOD_LABELS,
+  autoPaymentMethod,
+  type OrderSource,
+  type PaymentMethod,
+} from "@/types/order";
 import { useCart, money } from "@/lib/cart";
 import { placeOrder } from "@/lib/orders";
 import { MenuBrowser } from "@/components/menu/MenuBrowser";
 import { LiveClock } from "@/components/LiveClock";
+import { ManagerNav } from "@/components/manager/ManagerNav";
 
 // Matches the design's mNewTab + right-hand Kitchen token panel exactly.
 // Simplification: the design's full mDash wraps New order / Active orders in
@@ -20,8 +28,13 @@ export function ManagerNewOrderScreen({ menu }: { menu: Menu }) {
   const [sentOrderId, setSentOrderId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // "later" = guest hasn't settled yet; recorded at the counter afterwards.
+  const [payment, setPayment] = useState<PaymentMethod | "later">("later");
 
   const sourceLabel = ORDER_SOURCE_OPTIONS.find((s) => s.value === source)?.label ?? "";
+  // Swiggy/Zomato settle through the platform, so there's nothing to ask.
+  const autoMethod = source ? autoPaymentMethod(source) : null;
+  const method = autoMethod ?? (payment === "later" ? null : payment);
 
   async function sendToKitchen() {
     if (!source) return;
@@ -33,6 +46,8 @@ export function ManagerNewOrderScreen({ menu }: { menu: Menu }) {
         placedBy: "manager",
         prepMinutes: cart.totals.prepMinutes,
         lines: cart.lines,
+        paymentMethod: method,
+        paymentStatus: method ? "paid" : "pending",
       });
       setSentOrderId(orderId);
       cart.clear();
@@ -46,27 +61,15 @@ export function ManagerNewOrderScreen({ menu }: { menu: Menu }) {
   function newOrder() {
     setSentOrderId(null);
     setSource(null);
+    setPayment("later");
     setError(null);
   }
 
   return (
     <main className="flex h-screen flex-col overflow-hidden">
-      <div className="flex flex-none items-center gap-2.5 border-b border-ink/10 px-[18px] py-3">
-        <Link href="/manager" className="text-xl font-bold text-primary">
-          ‹
-        </Link>
-        <span className="font-display text-base text-primary">Golden City</span>
-        <span className="rounded-md bg-tertiary px-2.5 py-1.5 text-[10px] font-bold tracking-[.14em] text-surface">
-          COUNTER · ORDER ENTRY
-        </span>
-        <LiveClock className="ml-auto text-[11px] font-semibold text-muted" />
-        <Link
-          href="/manager/orders"
-          className="rounded-lg border border-ink/[0.16] px-3 py-1.5 text-xs font-bold text-ink transition hover:border-primary hover:text-primary"
-        >
-          Active orders
-        </Link>
-      </div>
+      <ManagerNav active="new-order">
+        <LiveClock className="text-[11px] font-semibold text-muted" />
+      </ManagerNav>
 
       <div className="flex min-h-0 flex-1">
         <div className="flex min-w-0 flex-1 flex-col">
@@ -189,6 +192,30 @@ export function ManagerNewOrderScreen({ menu }: { menu: Menu }) {
               </div>
 
               <div className="flex flex-none flex-col gap-2.5 border-t border-ink/10 px-4 pt-[13px] pb-4">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10.5px] font-bold tracking-[.14em] text-muted">PAYMENT</span>
+                  {autoMethod ? (
+                    <span className="rounded-full bg-tertiary px-[9px] py-[5px] text-[10.5px] font-bold text-surface">
+                      {PAYMENT_METHOD_LABELS[autoMethod]}
+                    </span>
+                  ) : (
+                    <div className="flex gap-1.5">
+                      {[...COUNTER_PAYMENT_OPTIONS, { value: "later" as const, label: "Pay later" }].map((p) => (
+                        <button
+                          key={p.value}
+                          onClick={() => setPayment(p.value)}
+                          className={
+                            p.value === payment
+                              ? "rounded-lg bg-primary px-2.5 py-1.5 text-[11px] font-extrabold text-surface"
+                              : "rounded-lg border border-ink/[0.16] px-2.5 py-1.5 text-[11px] font-semibold text-ink transition hover:border-primary hover:text-primary"
+                          }
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <div className="flex justify-between">
                   <span className="text-xs font-semibold text-muted">Total Cost</span>
                   <span className="text-[17px] font-extrabold text-ink">{money(cart.totals.cost)}</span>
@@ -208,7 +235,9 @@ export function ManagerNewOrderScreen({ menu }: { menu: Menu }) {
                   {submitting ? "Sending…" : "Send to Kitchen →"}
                 </button>
                 <span className="text-center text-[10.5px] leading-[1.5] text-muted">
-                  Payment is collected at the counter.
+                  {method
+                    ? `Recorded as paid — ${PAYMENT_METHOD_LABELS[method].toLowerCase()}.`
+                    : "Unpaid — settle at the counter from the orders list."}
                 </span>
               </div>
             </>
