@@ -1,15 +1,37 @@
 "use server";
 
+import { headers } from "next/headers";
 import menuData from "@/data/menu.json";
 import type { Menu } from "@/types/menu";
 import { getServiceSupabase } from "@/lib/supabase/server";
 import { priceCart, type RequestedLine } from "@/lib/order-pricing";
 import { isAcceptingOrders, isValidPickupTime } from "@/lib/service-hours";
 import { normalizeName, normalizePhone } from "@/lib/phone";
+import { checkRateLimit, clientIp, recordRateLimitEvent } from "@/lib/rate-limit";
 import { createRazorpayOrder, verifyPaymentForOrder } from "@/lib/razorpay";
 import type { OrderServiceType } from "@/types/order";
 
 const menu = menuData as Menu;
+
+// /order is public and unauthenticated, and every accepted call writes rows and
+// creates a Razorpay order. Generous enough that a real customer redoing their
+// order never notices, tight enough that a script cannot fill the table.
+const PER_PHONE = { limit: 5, windowMinutes: 30 };
+const PER_IP = { limit: 20, windowMinutes: 30 };
+
+/** Server action arguments come off the wire and are not validated by the
+ *  framework — a hand-rolled POST can send anything at all. */
+function isPlausibleInput(input: unknown): input is StartOrderInput {
+  if (typeof input !== "object" || input === null) return false;
+  const i = input as Record<string, unknown>;
+  return (
+    typeof i.name === "string" &&
+    typeof i.phone === "string" &&
+    typeof i.scheduledFor === "number" &&
+    Number.isFinite(i.scheduledFor) &&
+    Array.isArray(i.lines)
+  );
+}
 
 export interface StartOrderInput {
   serviceType: OrderServiceType;
@@ -32,6 +54,8 @@ export type StartOrderResult =
 export async function startPhoneOrder(input: StartOrderInput): Promise<StartOrderResult> {
   const now = Date.now();
 
+  if (!isPlausibleInput(input)) return { ok: false, error: "That order didn't come through — try again." };
+
   if (!isAcceptingOrders(now)) {
     return { ok: false, error: "We've stopped taking orders for now — the kitchen is closed." };
   }
@@ -49,6 +73,17 @@ export async function startPhoneOrder(input: StartOrderInput): Promise<StartOrde
     return { ok: false, error: "That time isn't available any more — pick another." };
   }
 
+  // Throttled on the identified number and the source IP. Checked after the
+  // cheap validation so a malformed flood never reaches the database.
+  const ip = clientIp(await headers());
+  const [byPhone, byIp] = await Promise.all([
+    checkRateLimit({ bucket: "phone_order", key: phone, ...PER_PHONE }),
+    checkRateLimit({ bucket: "phone_order", key: `ip:${ip}`, ...PER_IP }),
+  ]);
+  if (!byPhone.allowed || !byIp.allowed) {
+    return { ok: false, error: "That's a lot of orders in a short time — please call us instead." };
+  }
+
   const priced = priceCart(menu, input.lines);
   if ("error" in priced) return { ok: false, error: priced.error };
   const { cart } = priced;
@@ -64,7 +99,6 @@ export async function startPhoneOrder(input: StartOrderInput): Promise<StartOrde
       service_type: input.serviceType,
       scheduled_for: new Date(input.scheduledFor).toISOString(),
       customer_name: name,
-      customer_phone: phone,
       payment_status: "pending",
     })
     .select("id")
@@ -84,10 +118,28 @@ export async function startPhoneOrder(input: StartOrderInput): Promise<StartOrde
     return { ok: false, error: itemsError.message };
   }
 
+  // The number lives in order_contacts, not on the order: public.orders is
+  // world-readable through the anon key, and a name plus a mobile number is
+  // not something to hand out with a curl. See migration 0009.
+  const { error: contactError } = await supabase
+    .from("order_contacts")
+    .insert({ order_id: order.id, phone });
+
+  if (contactError) {
+    await supabase.from("orders").delete().eq("id", order.id);
+    return { ok: false, error: contactError.message };
+  }
+
   try {
     // receipt carries our order id — that binding is what proves, later, that
     // a given payment was for this order and not some cheaper one.
     const rzp = await createRazorpayOrder(cart.totalPaise, order.id);
+    // Only count against the limit once an order really was created, so a
+    // gateway outage can't lock a customer out by burning their quota.
+    await Promise.all([
+      recordRateLimitEvent("phone_order", phone),
+      recordRateLimitEvent("phone_order", `ip:${ip}`),
+    ]);
     return {
       ok: true,
       orderId: order.id,

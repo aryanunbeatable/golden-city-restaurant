@@ -64,6 +64,33 @@ assert.deepEqual(
 assert.deepEqual(pickupSlots(at("2026-08-18T09:00:00+05:30")), [], "no slots while closed");
 assert.deepEqual(pickupSlots(at("2026-08-19T01:45:00+05:30")), [], "no slots after ordering shuts");
 
+// REGRESSION: every offered slot must survive the server-side guard, at times
+// that are NOT on a whole minute. The earlier version of this file only ever
+// used whole-minute timestamps, which hid a real bug: serviceMinute() drops
+// seconds, so on a 15-minute boundary with seconds elapsed the earliest slot
+// came out 29m30s away and startPhoneOrder() refused the customer's own pick.
+for (const iso of [
+  "2026-08-18T11:30:30+05:30", // opening minute, mid-minute
+  "2026-08-18T13:45:20+05:30", // slot boundary, mid-minute
+  "2026-08-18T20:00:45+05:30", // slot boundary, late in the minute
+  "2026-08-18T20:07:13+05:30", // ragged minute and seconds
+  "2026-08-19T01:29:59+05:30", // one second before ordering shuts
+]) {
+  const t = at(iso);
+  const offered = pickupSlots(t);
+  assert.ok(offered.length > 0, `should still offer slots at ${iso}`);
+  for (const slot of offered) {
+    assert.ok(
+      isValidPickupTime(t, slot),
+      `slot ${clockLabel(slot)} offered at ${iso} must pass the server guard`,
+    );
+    assert.ok(
+      slot - t >= MIN_LEAD_MINUTES * MIN,
+      `slot ${clockLabel(slot)} offered at ${iso} breaches the 30-minute floor`,
+    );
+  }
+}
+
 // --- isValidPickupTime: the guard against a hand-crafted request ---
 const now2 = at("2026-08-18T20:00:00+05:30");
 assert.equal(isValidPickupTime(now2, at("2026-08-18T20:20:00+05:30")), false, "under the 30-minute floor");

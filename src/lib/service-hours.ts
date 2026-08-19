@@ -50,11 +50,16 @@ export function isAcceptingOrders(now: number): boolean {
 export function pickupSlots(now: number): number[] {
   if (!isAcceptingOrders(now)) return [];
   const earliest = serviceMinute(now) + MIN_LEAD_MINUTES;
-  // Round up to the next slot boundary so we never offer a time already past.
   const first = Math.ceil(Math.max(earliest, OPEN_MINUTE) / SLOT_MINUTES) * SLOT_MINUTES;
   const slots: number[] = [];
   for (let m = first; m <= CLOSE_MINUTE; m += SLOT_MINUTES) {
-    slots.push(instantForServiceMinute(now, m));
+    const instant = instantForServiceMinute(now, m);
+    // Filtered through the same guard the server will apply, rather than by a
+    // parallel calculation. serviceMinute() truncates seconds, so at 11:30:30
+    // the "+30 minutes" boundary lands at 12:00 — 29m30s away — and the guard
+    // would reject the very slot the picker had just offered. Deriving the
+    // list from the guard makes offered ⊆ accepted true by construction.
+    if (isValidPickupTime(now, instant)) slots.push(instant);
   }
   return slots;
 }

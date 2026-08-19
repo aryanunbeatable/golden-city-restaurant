@@ -101,6 +101,16 @@ export interface OrderRow {
   served_at: string | null;
   payment_method: PaymentMethod | null;
   payment_status: PaymentStatus;
+  /** Phone orders only; null on every other source. */
+  service_type: OrderServiceType | null;
+  /** When the food must be READY, not when the customer arrives. */
+  scheduled_for: string | null;
+  /** Shown on the kitchen card so staff know whose bag it is. The customer's
+   *  number is deliberately NOT here — it lives in order_contacts, which the
+   *  public anon key cannot read. See migration 0009. */
+  customer_name: string | null;
+  payment_reference: string | null;
+  refunded_at: string | null;
 }
 
 export interface OrderItemRow {

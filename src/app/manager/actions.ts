@@ -62,20 +62,37 @@ export async function settleOrderPayment(
   if (!(await isManager())) return { ok: false, error: "Session expired — unlock the dashboard again." };
   if (!SETTLEABLE.includes(method)) return { ok: false, error: "Unsupported payment method." };
 
-  const { error } = await getServiceSupabase()
+  // Only an unpaid order can be settled. Guarding in the WHERE clause rather
+  // than with a read-then-write closes the race, and stops a stale page from
+  // rewriting an order already paid through Razorpay as counter cash — which
+  // would report online revenue as cash and leave payment_reference pointing
+  // at a payment that no longer matches the recorded method.
+  const { data, error } = await getServiceSupabase()
     .from("orders")
     .update({ payment_method: method, payment_status: "paid" })
-    .eq("id", orderId);
-  return error ? { ok: false, error: error.message } : { ok: true };
+    .eq("id", orderId)
+    .eq("payment_status", "pending")
+    .select("id");
+
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) {
+    return { ok: false, error: "That order is already settled — reload the page." };
+  }
+  return { ok: true };
 }
 
 /** Void an order. Kept, never deleted, and excluded from every total. */
 export async function voidOrder(orderId: string): Promise<ActionResult> {
   if (!(await isManager())) return { ok: false, error: "Session expired — unlock the dashboard again." };
 
-  const { error } = await getServiceSupabase()
+  const { data, error } = await getServiceSupabase()
     .from("orders")
     .update({ status: "cancelled" })
-    .eq("id", orderId);
-  return error ? { ok: false, error: error.message } : { ok: true };
+    .eq("id", orderId)
+    .select("id");
+
+  if (error) return { ok: false, error: error.message };
+  // A silent no-op would have the UI cheerfully show the order as voided.
+  if (!data || data.length === 0) return { ok: false, error: "That order no longer exists." };
+  return { ok: true };
 }

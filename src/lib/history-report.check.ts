@@ -33,6 +33,11 @@ function order(
     served_at: null,
     payment_method: "counter_cash" as PaymentMethod | null,
     payment_status: "paid" as PaymentStatus,
+    service_type: null,
+    scheduled_for: null,
+    customer_name: null,
+    payment_reference: null,
+    refunded_at: null,
     ...over,
   };
 }
