@@ -46,22 +46,9 @@ export async function placeOrder({
   return data as string;
 }
 
-// Cancelling keeps the row (history must stay honest) but drops it out of the
-// kitchen board's columns and out of every revenue total.
-export async function cancelOrder(id: string): Promise<void> {
-  const { error } = await getSupabase().from("orders").update({ status: "cancelled" }).eq("id", id);
-  if (error) throw new Error(error.message);
-}
-
-// Settling a counter payment: the method isn't edited, it's recorded for the
-// first time when the guest actually pays.
-export async function settlePayment(id: string, method: PaymentMethod): Promise<void> {
-  const { error } = await getSupabase()
-    .from("orders")
-    .update({ payment_method: method, payment_status: "paid" })
-    .eq("id", id);
-  if (error) throw new Error(error.message);
-}
+// Voiding and settling used to live here as browser-side writes. They now run
+// as server actions in src/app/manager/actions.ts, because the public anon key
+// is barred from writing payment columns — see migration 0007.
 
 // "3s ago" / "4m 12s ago" — shared by the customer tracking screen and the
 // manager orders list so both age columns read identically.

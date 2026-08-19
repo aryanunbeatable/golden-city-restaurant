@@ -1,15 +1,35 @@
 // Mirrors supabase/migrations/0001_orders.sql + 0003_payments_history.sql.
 export type OrderStatus =
+  // Phone orders start here and are invisible everywhere until Razorpay
+  // confirms the money arrived. Nothing but the customer's own checkout and
+  // the payment webhook should ever see one.
+  | "awaiting_payment"
   | "waiting_confirmation"
   | "confirmed"
   | "preparing"
   | "ready"
   | "served"
   | "cancelled";
-export type OrderSource = "table_1" | "table_2" | "table_3" | "table_4" | "swiggy" | "zomato" | "parcel";
+export type OrderSource =
+  | "table_1"
+  | "table_2"
+  | "table_3"
+  | "table_4"
+  | "swiggy"
+  | "zomato"
+  | "parcel"
+  | "phone";
 export type PlacedBy = "customer" | "manager";
-export type PaymentMethod = "table_online" | "counter_online" | "counter_cash" | "swiggy" | "zomato";
+export type PaymentMethod =
+  | "table_online"
+  | "counter_online"
+  | "counter_cash"
+  | "swiggy"
+  | "zomato"
+  | "phone_online";
 export type PaymentStatus = "pending" | "paid";
+/** Phone orders only — takeaway is the common case, dine-in the rare one. */
+export type OrderServiceType = "takeaway" | "dine_in";
 
 // Display labels for the manager order-entry source picker.
 export const ORDER_SOURCE_OPTIONS: readonly { value: OrderSource; label: string }[] = [
@@ -20,7 +40,13 @@ export const ORDER_SOURCE_OPTIONS: readonly { value: OrderSource; label: string 
   { value: "swiggy", label: "Swiggy" },
   { value: "zomato", label: "Zomato" },
   { value: "parcel", label: "Parcel" },
+  { value: "phone", label: "Phone" },
 ];
+
+// What the counter's source picker offers. Phone orders arrive through /order
+// and are never keyed in by hand, but 'phone' still needs a label above for
+// badges, history splits and the CSV — hence two lists rather than one.
+export const COUNTER_SOURCE_OPTIONS = ORDER_SOURCE_OPTIONS.filter((s) => s.value !== "phone");
 
 export function isTableSource(source: OrderSource): boolean {
   return source.startsWith("table_");
@@ -40,6 +66,7 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   counter_cash: "Cash · counter",
   swiggy: "Swiggy",
   zomato: "Zomato",
+  phone_online: "Online · phone",
 };
 
 // Aggregator orders are settled by the platform, never at the counter — the

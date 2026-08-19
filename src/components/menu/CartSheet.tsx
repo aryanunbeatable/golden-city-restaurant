@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import type { CartLine } from "@/lib/cart";
 import { money } from "@/lib/cart";
 import { VegDot } from "./ItemCard";
@@ -13,18 +14,43 @@ interface CartSheetProps {
   onStartCooking: () => void;
   submitting: boolean;
   error: string | null;
+  /** Phone orders reuse this sheet with their own wording and a time picker;
+   *  the line-item list and totals are identical, so only these differ. */
+  title?: string;
+  ctaLabel?: string;
+  submittingLabel?: string;
+  note?: string;
+  /** Rendered above the totals block — the phone flow's pickup-time picker. */
+  children?: ReactNode;
+  /** Lets the phone flow block checkout until a pickup time is chosen. */
+  ctaDisabled?: boolean;
 }
 
 // Bottom sheet, matching the design's cartOpen block exactly. Decrementing a
 // line to 0 removes it (bumpCart's own behavior) — that's the only "remove"
 // control, same as the source design (no separate delete button).
-export function CartSheet({ lines, totals, onInc, onDec, onClose, onStartCooking, submitting, error }: CartSheetProps) {
+export function CartSheet({
+  lines,
+  totals,
+  onInc,
+  onDec,
+  onClose,
+  onStartCooking,
+  submitting,
+  error,
+  title = "Your order",
+  ctaLabel = "Start Cooking →",
+  submittingLabel = "Placing order…",
+  note = "No payment here — settle the bill at the counter.",
+  children,
+  ctaDisabled = false,
+}: CartSheetProps) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end bg-ink/45">
       <div onClick={onClose} className="flex-1 cursor-pointer" />
       <div className="animate-gc-sheet flex max-h-[78%] flex-col gap-3.5 rounded-t-[26px] rounded-b-[34px] bg-background p-[18px] pb-5">
         <div className="flex items-center justify-between">
-          <span className="font-display text-xl text-primary">Your order</span>
+          <span className="font-display text-xl text-primary">{title}</span>
           <button
             onClick={onClose}
             className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-ink/[0.07] text-[15px] font-semibold text-ink"
@@ -69,6 +95,8 @@ export function CartSheet({ lines, totals, onInc, onDec, onClose, onStartCooking
           ))}
         </div>
 
+        {children}
+
         <div className="flex flex-col gap-[9px] rounded-2xl border border-ink/[0.09] bg-surface px-3.5 py-[13px]">
           <div className="flex justify-between">
             <span className="text-xs font-semibold text-muted">Total Cost</span>
@@ -80,19 +108,17 @@ export function CartSheet({ lines, totals, onInc, onDec, onClose, onStartCooking
               {totals.prepMinutes} min
             </span>
           </div>
-          <span className="text-[10.5px] leading-[1.5] text-muted">
-            No payment here — settle the bill at the counter.
-          </span>
+          <span className="text-[10.5px] leading-[1.5] text-muted">{note}</span>
         </div>
 
         {error && <p className="text-center text-[12px] font-semibold text-non-veg">{error}</p>}
 
         <button
           onClick={onStartCooking}
-          disabled={submitting || lines.length === 0}
+          disabled={submitting || ctaDisabled || lines.length === 0}
           className="rounded-2xl bg-primary py-4 text-[15px] font-extrabold text-surface shadow-[0_10px_24px_rgba(139,29,14,0.3)] transition hover:bg-[#7A180B] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {submitting ? "Placing order…" : "Start Cooking →"}
+          {submitting ? submittingLabel : ctaLabel}
         </button>
       </div>
     </div>

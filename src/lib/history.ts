@@ -21,6 +21,9 @@ export async function fetchOrdersInRange(startMs: number, endMs: number): Promis
     .select("*, order_items(*)")
     .gte("created_at", new Date(startMs).toISOString())
     .lt("created_at", new Date(endMs).toISOString())
+    // An abandoned phone checkout is not an order — it must never appear in
+    // history or move a total.
+    .neq("status", "awaiting_payment")
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []) as OrderWithItems[];
@@ -37,6 +40,7 @@ export async function searchByDish(
     .from("orders")
     .select("*, order_items!inner(*)")
     .ilike("order_items.item_name", `%${query}%`)
+    .neq("status", "awaiting_payment")
     .order("created_at", { ascending: false })
     .limit(500);
   if (range) {

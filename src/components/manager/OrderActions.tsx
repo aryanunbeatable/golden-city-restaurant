@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { cancelOrder, settlePayment } from "@/lib/orders";
+import { settleOrderPayment, voidOrder as voidOrderAction } from "@/app/manager/actions";
 import {
   COUNTER_PAYMENT_OPTIONS,
   paymentLabel,
@@ -11,6 +11,13 @@ import {
 } from "@/types/order";
 
 export const STATUS_STYLE: Record<OrderStatus, { label: string; className: string }> = {
+  // Present for completeness only — every query that feeds these screens
+  // filters awaiting_payment out, because an abandoned checkout is not an
+  // order and must never reach a total.
+  awaiting_payment: {
+    label: "Unpaid",
+    className: "border border-ink/20 bg-ink/[0.07] text-muted",
+  },
   waiting_confirmation: {
     label: "Waiting",
     className: "border border-secondary/45 bg-secondary/[0.18] text-[#8B6C08]",
@@ -41,11 +48,14 @@ export function OrderActions({
   const voided = order.status === "cancelled";
   const settled = order.payment_status === "paid";
 
-  async function run(fn: () => Promise<void>, patch: Partial<OrderRow>) {
+  // Payment and void writes go through server actions holding the service-role
+  // key — the browser's anon key has no write access to payment columns.
+  async function run(fn: () => Promise<{ ok: boolean; error?: string }>, patch: Partial<OrderRow>) {
     setBusy(true);
     try {
-      await fn();
-      onApplied(patch);
+      const result = await fn();
+      if (result.ok) onApplied(patch);
+      else onError(result.error ?? "That didn't go through — try again.");
     } catch (e) {
       onError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -54,12 +64,15 @@ export function OrderActions({
   }
 
   function settle(method: PaymentMethod) {
-    return run(() => settlePayment(order.id, method), { payment_method: method, payment_status: "paid" });
+    return run(() => settleOrderPayment(order.id, method), {
+      payment_method: method,
+      payment_status: "paid",
+    });
   }
 
   function voidOrder() {
     setConfirmingVoid(false);
-    return run(() => cancelOrder(order.id), { status: "cancelled" });
+    return run(() => voidOrderAction(order.id), { status: "cancelled" });
   }
 
   if (voided) {

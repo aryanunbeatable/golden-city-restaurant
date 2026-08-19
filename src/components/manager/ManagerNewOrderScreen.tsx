@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Menu } from "@/types/menu";
 import {
   COUNTER_PAYMENT_OPTIONS,
+  COUNTER_SOURCE_OPTIONS,
   ORDER_SOURCE_OPTIONS,
   PAYMENT_METHOD_LABELS,
   autoPaymentMethod,
@@ -80,7 +81,7 @@ export function ManagerNewOrderScreen({ menu }: { menu: Menu }) {
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex flex-none flex-wrap items-center gap-2.5 border-b border-ink/10 px-4 py-3.5 md:px-[18px]">
             <span className="mr-1 text-[10.5px] font-bold tracking-[.14em] text-muted">ORDER SOURCE</span>
-            {ORDER_SOURCE_OPTIONS.map((s) => (
+            {COUNTER_SOURCE_OPTIONS.map((s) => (
               <button
                 key={s.value}
                 onClick={() => setSource(s.value)}
