@@ -120,6 +120,9 @@ export interface OrderRow {
   /** Phone orders only. Lets the reconcile sweep fetch the payment by id
    *  instead of through Razorpay's lag-prone order list. */
   razorpay_order_id: string | null;
+  /** Set once the "time to head over" push has gone out, so the every-minute
+   *  sweep cannot send it twice. Cleared when an order is delayed. */
+  leave_notified_at: string | null;
   refunded_at: string | null;
 }
 

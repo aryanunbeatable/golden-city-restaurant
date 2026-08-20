@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { settleOrderPayment, voidOrder as voidOrderAction } from "@/app/manager/actions";
+import { delayOrder, settleOrderPayment, voidOrder as voidOrderAction } from "@/app/manager/actions";
 import {
   COUNTER_PAYMENT_OPTIONS,
   paymentLabel,
@@ -44,6 +44,12 @@ export function OrderActions({
 }) {
   const [busy, setBusy] = useState(false);
   const [confirmingVoid, setConfirmingVoid] = useState(false);
+  const [choosingDelay, setChoosingDelay] = useState(false);
+
+  // Only a scheduled order can run late — everything else has no promised time
+  // to move, and no customer waiting on one.
+  const canDelay =
+    order.source === "phone" && !!order.scheduled_for && (order.status === "confirmed" || order.status === "preparing");
 
   const voided = order.status === "cancelled";
   const settled = order.payment_status === "paid";
@@ -75,6 +81,12 @@ export function OrderActions({
     return run(() => voidOrderAction(order.id), { status: "cancelled" });
   }
 
+  function delay(minutes: number) {
+    setChoosingDelay(false);
+    const moved = new Date(new Date(order.scheduled_for!).getTime() + minutes * 60_000).toISOString();
+    return run(() => delayOrder(order.id, minutes), { scheduled_for: moved, leave_notified_at: null });
+  }
+
   if (voided) {
     return <span className="text-[11px] font-semibold text-muted">Voided</span>;
   }
@@ -97,6 +109,36 @@ export function OrderActions({
           </button>
         ))
       )}
+      {canDelay &&
+        (choosingDelay ? (
+          <>
+            <span className="text-[10.5px] font-bold tracking-[.1em] text-muted">LATE BY</span>
+            {[10, 15, 30].map((m) => (
+              <button
+                key={m}
+                disabled={busy}
+                onClick={() => delay(m)}
+                className="rounded-lg border border-secondary/50 bg-secondary/[0.12] px-2.5 py-1.5 text-[11px] font-bold text-[#8B6C08] transition hover:border-secondary disabled:opacity-50"
+              >
+                +{m}m
+              </button>
+            ))}
+            <button
+              onClick={() => setChoosingDelay(false)}
+              className="rounded-lg px-1.5 py-1.5 text-[11px] font-semibold text-muted hover:text-ink"
+            >
+              No
+            </button>
+          </>
+        ) : (
+          <button
+            disabled={busy}
+            onClick={() => setChoosingDelay(true)}
+            className="rounded-lg border border-ink/[0.16] px-2.5 py-1.5 text-[11px] font-bold text-ink transition hover:border-secondary hover:text-[#8B6C08] disabled:opacity-50"
+          >
+            Running late
+          </button>
+        ))}
       {confirmingVoid ? (
         <>
           <button

@@ -4,10 +4,11 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabase } from "@/lib/supabase/client";
 import { untilLabel } from "@/lib/order-clock";
+
 import { since } from "@/lib/orders";
 import { businessDayCutoffMs, msUntilNextBusinessDay } from "@/lib/business-day";
 import { clockLabel } from "@/lib/service-hours";
-import { signOutKitchen } from "@/app/kitchen/actions";
+import { markOrderReady, signOutKitchen } from "@/app/kitchen/actions";
 import {
   isTableSource,
   sourceLabel,
@@ -182,7 +183,10 @@ export function KitchenBoard() {
     if (error) setError(error.message);
   }
   async function markReady(id: string) {
-    const { error } = await getSupabase().from("orders").update({ status: "ready" }).eq("id", id);
+    // Routed through a server action rather than written directly, so a phone
+    // customer's notification can be sent with the key the browser must not have.
+    const result = await markOrderReady(id);
+    const error = result.ok ? null : { message: result.error ?? "Couldn't mark that ready." };
     if (error) setError(error.message);
   }
   // No dedicated "served" column: this status simply drops the order out of

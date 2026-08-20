@@ -6,6 +6,7 @@ import { getSupabase } from "@/lib/supabase/client";
 import { money } from "@/lib/cart";
 import { clockLabel } from "@/lib/service-hours";
 import { countdownLabel, scheduledPhase } from "@/lib/order-clock";
+import { PushOptIn } from "@/components/customer/PushOptIn";
 import type { OrderItemRow, OrderRow } from "@/types/order";
 
 type LoadState =
@@ -158,6 +159,10 @@ export function PhoneOrderTracker({ orderId }: { orderId: string }) {
           <span className="text-[17px] font-extrabold text-primary">{money(total)}</span>
         </div>
       </div>
+
+      {order.status !== "cancelled" && order.status !== "served" && order.status !== "ready" && (
+        <PushOptIn orderId={order.id} />
+      )}
 
       <p className="text-center text-[10.5px] leading-[1.6] text-muted">
         Keep this page — it&apos;s the only link to your order.

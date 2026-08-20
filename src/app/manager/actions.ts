@@ -1,6 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { after } from "next/server";
 import {
   MANAGER_SESSION_COOKIE,
   MANAGER_SESSION_TTL_MS,
@@ -8,8 +9,9 @@ import {
   isValidSessionCookieValue,
 } from "@/lib/manager-session";
 import { getServiceSupabase } from "@/lib/supabase/server";
+import { sendOrderPush } from "@/lib/push";
 import { refundPayment } from "@/lib/razorpay";
-import { isValidPickupTime } from "@/lib/service-hours";
+import { clockLabel, isValidPickupTime } from "@/lib/service-hours";
 import type { PaymentMethod } from "@/types/order";
 
 export interface ActionResult {
@@ -174,6 +176,16 @@ export async function rejectPhoneOrder(orderId: string): Promise<ActionResult> {
     .eq("id", orderId);
   if (cancelError) return { ok: false, error: cancelError.message };
 
+  // Cancelled for certain by this point. Told even if the refund below fails,
+  // because the thing the customer must not do is turn up for food that isn't
+  // coming — that matters more than whether the money is back yet.
+  after(async () => {
+    await sendOrderPush(orderId, {
+      title: "Order cancelled",
+      body: "Sorry — we couldn't take this one. Your payment is being refunded.",
+    });
+  });
+
   const reference = order.payment_reference as string | null;
   if (order.payment_status !== "paid" || !reference || order.refunded_at) {
     return { ok: true }; // nothing was taken, or it was already sent back
@@ -190,4 +202,49 @@ export async function rejectPhoneOrder(orderId: string): Promise<ActionResult> {
       error: `Order cancelled, but the refund failed: ${why}. Refund it from the Razorpay dashboard.`,
     };
   }
+}
+
+/**
+ * "We're running behind." Moves the promised time and tells the customer.
+ *
+ * Moving scheduled_for rather than only messaging is the point: the kitchen
+ * board derives cook-start from it, so a message-only version would leave the
+ * pass working to a time nobody is cooking to any more. The customer's two
+ * countdowns re-derive from it for free.
+ */
+export async function delayOrder(orderId: string, extraMinutes: number): Promise<ActionResult> {
+  if (!(await isManager())) return { ok: false, error: "Session expired — unlock the dashboard again." };
+  if (!Number.isInteger(extraMinutes) || extraMinutes < 5 || extraMinutes > 60) {
+    return { ok: false, error: "Pick a delay between 5 and 60 minutes." };
+  }
+
+  const supabase = getServiceSupabase();
+  const { data: order, error: readError } = await supabase
+    .from("orders")
+    .select("id, scheduled_for")
+    .eq("id", orderId)
+    .single();
+
+  if (readError || !order?.scheduled_for) return { ok: false, error: "That order has no scheduled time." };
+
+  const moved = new Date(new Date(order.scheduled_for).getTime() + extraMinutes * 60_000);
+  const { error } = await supabase
+    .from("orders")
+    // Clearing the nudge lets the sweep fire again against the new time —
+    // otherwise a customer nudged before the delay never hears about the
+    // change and arrives on the old schedule.
+    .update({ scheduled_for: moved.toISOString(), leave_notified_at: null })
+    .eq("id", orderId);
+
+  if (error) return { ok: false, error: error.message };
+
+  after(async () => {
+    await sendOrderPush(orderId, {
+      title: "Running a little late",
+      body: `Sorry — your order will now be ready by ${clockLabel(moved.getTime())}.`,
+      tag: `${orderId}:late`,
+    });
+  });
+
+  return { ok: true };
 }

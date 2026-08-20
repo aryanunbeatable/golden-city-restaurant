@@ -40,6 +40,7 @@ function order(
     payment_reference: null,
     refunded_at: null,
     razorpay_order_id: null,
+    leave_notified_at: null,
     ...over,
   };
 }
