@@ -48,7 +48,10 @@ export function CartSheet({
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end bg-ink/45">
       <div onClick={onClose} className="flex-1 cursor-pointer" />
-      <div className="animate-gc-sheet flex max-h-[78%] flex-col gap-3.5 rounded-t-[26px] rounded-b-[34px] bg-background p-[18px] pb-5">
+      {/* Centred and capped: the sheet is `fixed`, so it escapes the order
+          flow's centred column and would otherwise span a whole desktop
+          screen. No-op below 448px, which is every phone. */}
+      <div className="animate-gc-sheet mx-auto flex w-full max-w-md max-h-[78%] flex-col gap-3.5 rounded-t-[26px] rounded-b-[34px] bg-background p-[18px] pb-5">
         <div className="flex items-center justify-between">
           <span className="font-display text-xl text-primary">{title}</span>
           <button
