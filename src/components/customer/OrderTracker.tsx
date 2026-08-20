@@ -25,6 +25,10 @@ function clock(ms: number): string {
 
 const CONFETTI_COLORS = ["var(--color-secondary)", "var(--color-primary)", "var(--color-tertiary)"];
 
+// How long the "Order confirmed" tick holds before the countdown takes over.
+// Long enough to register, short enough that nobody thinks it's the end state.
+const CONFIRM_BEAT_MS = 4_000;
+
 export function OrderTracker({ tableId, orderId }: { tableId: TableId; orderId: string }) {
   const [state, setState] = useState<LoadState>({ kind: "loading" });
   const [now, setNow] = useState(() => Date.now());
@@ -176,7 +180,17 @@ function StatusVisual({ order, now }: { order: OrderRow; now: number }) {
     );
   }
 
-  if (order.status === "confirmed") {
+  // 'confirmed' and 'preparing' are one state to the customer: the kitchen has
+  // it and it's cooking. The board only ever writes 'confirmed' (Accept Order)
+  // and then 'ready' — nothing writes 'preparing' — so keying the countdown to
+  // 'preparing' alone left the customer staring at a static tick for the whole
+  // cook. The tick is a beat, not a resting state, so it plays briefly and then
+  // hands over to the timer.
+  const confirmedAtMs = order.confirmed_at ? new Date(order.confirmed_at).getTime() : null;
+  const inConfirmBeat =
+    order.status === "confirmed" && confirmedAtMs !== null && now - confirmedAtMs < CONFIRM_BEAT_MS;
+
+  if (inConfirmBeat) {
     return (
       <div key="confirmed" className="animate-gc-pop-confirm flex flex-col items-center gap-[18px]">
         <span className="flex h-24 w-24 items-center justify-center rounded-full bg-veg text-[46px] font-light text-surface">
@@ -190,9 +204,10 @@ function StatusVisual({ order, now }: { order: OrderRow; now: number }) {
     );
   }
 
-  if (order.status === "preparing") {
-    // confirmed_at is always set by the time status reaches "preparing" —
-    // the DB trigger stamps it the moment status first enters confirmed/preparing.
+  if (order.status === "confirmed" || order.status === "preparing") {
+    // confirmed_at is stamped by the DB trigger the moment status first enters
+    // confirmed/preparing, so it is set here in practice; the fallback just
+    // shows a full estimate rather than a wrong one.
     const left = order.confirmed_at
       ? remainingMs(order.estimated_prep_minutes, order.confirmed_at, now)
       : order.estimated_prep_minutes * 60_000;
