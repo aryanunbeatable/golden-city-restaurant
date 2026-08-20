@@ -9,7 +9,7 @@ import { isAcceptingOrders, isValidPickupTime } from "@/lib/service-hours";
 import { normalizeName, normalizePhone } from "@/lib/phone";
 import { checkRateLimit, clientIp, recordRateLimitEvent } from "@/lib/rate-limit";
 import { createRazorpayOrder, verifyPaymentForOrder } from "@/lib/razorpay";
-import type { OrderServiceType } from "@/types/order";
+import { MAX_PARTY_SIZE, type OrderServiceType } from "@/types/order";
 
 const menu = menuData as Menu;
 
@@ -39,6 +39,8 @@ export interface StartOrderInput {
   phone: string;
   scheduledFor: number;
   lines: RequestedLine[];
+  /** Required for dine-in, must be absent for takeaway. */
+  partySize?: number | null;
 }
 
 export type StartOrderResult =
@@ -68,6 +70,15 @@ export async function startPhoneOrder(input: StartOrderInput): Promise<StartOrde
 
   const phone = normalizePhone(input.phone);
   if (!phone) return { ok: false, error: "That doesn't look like an Indian mobile number." };
+
+  // Mirrors the orders_party_size_ck constraint, so a bad value comes back as
+  // a readable message rather than a database error.
+  const partySize = input.serviceType === "dine_in" ? input.partySize : null;
+  if (input.serviceType === "dine_in") {
+    if (!Number.isInteger(partySize) || (partySize as number) < 1 || (partySize as number) > MAX_PARTY_SIZE) {
+      return { ok: false, error: "Tell us how many people are coming." };
+    }
+  }
 
   if (!isValidPickupTime(now, input.scheduledFor)) {
     return { ok: false, error: "That time isn't available any more — pick another." };
@@ -99,6 +110,7 @@ export async function startPhoneOrder(input: StartOrderInput): Promise<StartOrde
       service_type: input.serviceType,
       scheduled_for: new Date(input.scheduledFor).toISOString(),
       customer_name: name,
+      party_size: partySize ?? null,
       payment_status: "pending",
     })
     .select("id")

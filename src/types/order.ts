@@ -31,6 +31,11 @@ export type PaymentStatus = "pending" | "paid";
 /** Phone orders only — takeaway is the common case, dine-in the rare one. */
 export type OrderServiceType = "takeaway" | "dine_in";
 
+/** Matches the orders_party_size_ck constraint in migration 0010. Lives here
+ *  rather than in the server action because a "use server" module may only
+ *  export async functions. */
+export const MAX_PARTY_SIZE = 30;
+
 // Display labels for the manager order-entry source picker.
 export const ORDER_SOURCE_OPTIONS: readonly { value: OrderSource; label: string }[] = [
   { value: "table_1", label: "Table 1" },
@@ -109,6 +114,8 @@ export interface OrderRow {
    *  number is deliberately NOT here — it lives in order_contacts, which the
    *  public anon key cannot read. See migration 0009. */
   customer_name: string | null;
+  /** Dine-in phone orders only — advisory headcount, no table is held. */
+  party_size: number | null;
   payment_reference: string | null;
   refunded_at: string | null;
 }

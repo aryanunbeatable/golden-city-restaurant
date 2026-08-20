@@ -36,6 +36,7 @@ function order(
     service_type: null,
     scheduled_for: null,
     customer_name: null,
+    party_size: null,
     payment_reference: null,
     refunded_at: null,
     ...over,
