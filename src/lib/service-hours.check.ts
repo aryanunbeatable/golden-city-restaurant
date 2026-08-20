@@ -26,6 +26,12 @@ assert.equal(isOpen(at("2026-08-19T09:00:00+05:30")), false, "closed mid-morning
 // --- isAcceptingOrders: stops 15 min before close ---
 assert.equal(isAcceptingOrders(at("2026-08-19T01:45:00+05:30")), true, "last order goes in at 1:45 AM");
 assert.equal(isAcceptingOrders(at("2026-08-19T01:46:00+05:30")), false, "no orders after 1:45 AM");
+// REGRESSION: serviceMinute() drops seconds, so a minute-based cutoff called
+// 01:45:30 "open" while the only remaining slot (02:00) was 14m30s away and
+// failed isValidPickupTime. That left a 59-second window each night showing a
+// full menu, an empty time picker and a button that could never be enabled.
+assert.equal(isAcceptingOrders(at("2026-08-19T01:45:30+05:30")), false, "closed once the last slot is inside the floor");
+assert.equal(isAcceptingOrders(at("2026-08-19T01:45:00+05:30")), true, "still open when the last slot is exactly 15 min out");
 assert.equal(isAcceptingOrders(at("2026-08-18T11:00:00+05:30")), false, "no pre-open ordering");
 
 // --- pickupSlots ---
@@ -59,6 +65,28 @@ assert.deepEqual(
   [at("2026-08-19T01:45:00+05:30"), at("2026-08-19T02:00:00+05:30")].map(clockLabel),
   "at 1:20 AM two slots remain before the 2:00 AM close",
 );
+
+// The invariant the regression above broke: accepting an order and having a
+// slot to offer must be the same question, at every second of the night.
+for (const iso of [
+  "2026-08-18T11:29:59+05:30",
+  "2026-08-18T11:30:00+05:30",
+  "2026-08-18T18:07:41+05:30",
+  "2026-08-19T01:44:59+05:30",
+  "2026-08-19T01:45:00+05:30",
+  "2026-08-19T01:45:01+05:30",
+  "2026-08-19T01:45:30+05:30",
+  "2026-08-19T01:45:59+05:30",
+  "2026-08-19T01:46:00+05:30",
+  "2026-08-19T02:00:00+05:30",
+]) {
+  const t = at(iso);
+  assert.equal(
+    isAcceptingOrders(t),
+    pickupSlots(t).length > 0,
+    `accepting and having slots must agree at ${iso}`,
+  );
+}
 
 // Closed means no slots at all.
 assert.deepEqual(pickupSlots(at("2026-08-18T09:00:00+05:30")), [], "no slots while closed");

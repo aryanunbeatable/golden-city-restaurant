@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { getSupabase } from "@/lib/supabase/client";
 import { money } from "@/lib/cart";
 import { clockLabel } from "@/lib/service-hours";
-import { countdownLabel, scheduledPhase } from "@/lib/order-clock";
+import { countdownLabel, scheduledPhase, trackerTickMs } from "@/lib/order-clock";
 import { PushOptIn } from "@/components/customer/PushOptIn";
 import type { OrderItemRow, OrderRow } from "@/types/order";
 
@@ -27,13 +27,28 @@ type LoadState =
 export function PhoneOrderTracker({ orderId }: { orderId: string }) {
   const [state, setState] = useState<LoadState>({ kind: "loading" });
 
-  // Ticks the two countdowns. One second is enough — the coarse label for a
-  // multi-hour wait only changes once a minute anyway.
   const [now, setNow] = useState(() => Date.now());
+
+  // Ticks only as fast as the screen actually changes: per second while a
+  // countdown is showing seconds, per minute while it is coarse or counting
+  // how long the food has sat at the counter, and not at all once the order is
+  // finished. trackerTickMs returns one of three values, so this effect only
+  // re-runs when the tracker crosses between them, not on every tick.
+  const loaded = state.kind === "ready" ? state.order : null;
+  const tickMs = loaded
+    ? trackerTickMs(
+        loaded.status,
+        loaded.scheduled_for ? new Date(loaded.scheduled_for).getTime() : null,
+        loaded.estimated_prep_minutes,
+        now,
+      )
+    : null;
+
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
+    if (tickMs === null) return;
+    const id = setInterval(() => setNow(Date.now()), tickMs);
     return () => clearInterval(id);
-  }, []);
+  }, [tickMs]);
 
   useEffect(() => {
     let cancelled = false;

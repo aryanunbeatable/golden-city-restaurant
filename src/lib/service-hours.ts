@@ -37,12 +37,23 @@ export function isOpen(now: number): boolean {
   return m >= OPEN_MINUTE && m < CLOSE_MINUTE;
 }
 
-/** Can the link accept an order right now? Ordering stops early enough that
- *  the 15-minute floor still lands inside opening hours — so the last order
- *  goes in at 1:45 AM for a 2:00 AM pickup. */
+/**
+ * Can the link accept an order right now? Ordering stops early enough that the
+ * 15-minute floor still lands inside opening hours — so the last order goes in
+ * at 1:45 AM for a 2:00 AM pickup.
+ *
+ * The closing side is measured in real milliseconds against the last slot of
+ * the night rather than in truncated service minutes. serviceMinute() drops
+ * seconds, so a minute-based comparison said "open" at 01:45:30 while the only
+ * remaining slot (02:00) was 14m30s away and failed the floor in
+ * isValidPickupTime — leaving a 59-second window each night where the customer
+ * saw the full menu, an empty time picker and a permanently disabled button
+ * with no explanation. Measuring the real gap makes "accepting" and "has at
+ * least one slot" the same question.
+ */
 export function isAcceptingOrders(now: number): boolean {
-  const m = serviceMinute(now);
-  return m >= OPEN_MINUTE && m <= CLOSE_MINUTE - MIN_LEAD_MINUTES;
+  if (serviceMinute(now) < OPEN_MINUTE) return false;
+  return instantForServiceMinute(now, CLOSE_MINUTE) - now >= MIN_LEAD_MINUTES * MINUTE_MS;
 }
 
 /** Selectable ready-by times, as epoch ms, for the service day `now` is in.
@@ -92,8 +103,10 @@ export function clockLabel(ms: number): string {
 
 /** Why the link is shut, phrased for the customer. */
 export function closedMessage(now: number): string {
-  const m = serviceMinute(now);
-  if (m > CLOSE_MINUTE - MIN_LEAD_MINUTES && m < CLOSE_MINUTE) {
+  // Derived from isOpen rather than recomputing the cutoff: still serving but
+  // no longer accepting is exactly the late-night case, and deriving it means
+  // the two can't drift apart the way the minute-vs-millisecond check did.
+  if (isOpen(now)) {
     return "We've stopped taking orders for tonight — the kitchen closes at 2:00 AM. We're back at 11:30 AM.";
   }
   return "We're closed right now. Orders open daily at 11:30 AM and run till 2:00 AM.";
