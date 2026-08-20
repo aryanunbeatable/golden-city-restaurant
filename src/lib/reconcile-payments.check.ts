@@ -5,6 +5,7 @@
 // Getting it wrong either loses a real order or feeds someone who didn't pay.
 import assert from "node:assert/strict";
 import { settleablePayment, type RazorpayPayment } from "./razorpay.ts";
+import { GIVE_UP_AFTER_MS, RECHECK_AFTER_MS, STUCK_AFTER_MS } from "./reconcile-payments.ts";
 
 const ORDER = "order_ABC";
 const PAISE = 41900;
@@ -50,5 +51,14 @@ assert.equal(settleablePayment([succeeded, failed], ORDER, PAISE), succeeded, "o
 
 // All attempts failed — a customer who tried three times and gave up.
 assert.equal(settleablePayment([failed, payment({ id: "b", status: "failed" })], ORDER, PAISE), null, "all failed");
+
+// The three windows have to stay in a sane order or the sweep silently stops
+// working: a back-off longer than the give-up window means a candidate is
+// never re-checked before it ages out, and a back-off shorter than the
+// stuck threshold means the first check fires while the customer's own
+// callback is still in flight.
+assert.ok(STUCK_AFTER_MS < GIVE_UP_AFTER_MS, "orders must be candidates for longer than they take to become one");
+assert.ok(RECHECK_AFTER_MS < GIVE_UP_AFTER_MS, "back-off must allow at least one re-check before giving up");
+assert.ok(RECHECK_AFTER_MS >= STUCK_AFTER_MS, "re-checking faster than the stuck threshold just races the customer");
 
 console.log("reconcile-payments: all checks passed");
