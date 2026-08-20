@@ -57,12 +57,18 @@ export async function markOrderReady(orderId: string): Promise<{ ok: boolean; er
     .from("orders")
     .update({ status: "ready" })
     .eq("id", orderId)
-    .neq("status", "ready")
+    // Mirrors isCooking on the board. Not .neq("status","ready"): that also
+    // matches a cancelled order, so a stale kitchen card could resurrect one
+    // that the manager had already rejected and refunded, and push "your order
+    // is ready" to that customer. The board has no reconnect handling, so a
+    // stale card is a real possibility rather than a theoretical one.
+    .in("status", ["confirmed", "preparing"])
     .select("id, source, service_type")
     .maybeSingle();
 
   if (error) return { ok: false, error: error.message };
-  // Already ready — a double tap must not fire a second notification.
+  // Matched nothing: already ready, or cancelled underneath us. Either way
+  // there is nothing to do and nothing to announce.
   if (!order) return { ok: true };
 
   if (order.source === "phone") {

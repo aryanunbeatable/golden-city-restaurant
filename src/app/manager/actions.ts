@@ -176,18 +176,30 @@ export async function rejectPhoneOrder(orderId: string): Promise<ActionResult> {
     .eq("id", orderId);
   if (cancelError) return { ok: false, error: cancelError.message };
 
-  // Cancelled for certain by this point. Told even if the refund below fails,
-  // because the thing the customer must not do is turn up for food that isn't
-  // coming — that matters more than whether the money is back yet.
+  const reference = order.payment_reference as string | null;
+  const refundDue = order.payment_status === "paid" && !!reference && !order.refunded_at;
+
+  // Cancelled for certain by this point, and told even if the refund below
+  // fails — the thing the customer must not do is turn up for food that isn't
+  // coming, which matters more than whether the money is back yet. The wording
+  // has to match reality though: promising a refund on an order that was never
+  // charged sends them chasing money nobody took.
   after(async () => {
     await sendOrderPush(orderId, {
       title: "Order cancelled",
-      body: "Sorry — we couldn't take this one. Your payment is being refunded.",
+      body: refundDue
+        ? "Sorry — we couldn't take this one. Your payment is being refunded."
+        : order.refunded_at
+          ? "Sorry — we couldn't take this one. Your refund is already on its way."
+          : order.payment_status === "paid"
+            // Charged, but with no reference we cannot refund automatically.
+            // Never tell someone who paid that they weren't charged.
+            ? "Sorry — we couldn't take this one. We'll sort your refund out and call you."
+            : "Sorry — we couldn't take this one. You haven't been charged.",
     });
   });
 
-  const reference = order.payment_reference as string | null;
-  if (order.payment_status !== "paid" || !reference || order.refunded_at) {
+  if (!refundDue) {
     return { ok: true }; // nothing was taken, or it was already sent back
   }
 
@@ -221,22 +233,32 @@ export async function delayOrder(orderId: string, extraMinutes: number): Promise
   const supabase = getServiceSupabase();
   const { data: order, error: readError } = await supabase
     .from("orders")
-    .select("id, scheduled_for")
+    .select("id, source, status, scheduled_for")
     .eq("id", orderId)
     .single();
 
   if (readError || !order?.scheduled_for) return { ok: false, error: "That order has no scheduled time." };
 
   const moved = new Date(new Date(order.scheduled_for).getTime() + extraMinutes * 60_000);
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("orders")
     // Clearing the nudge lets the sweep fire again against the new time —
     // otherwise a customer nudged before the delay never hears about the
     // change and arrives on the old schedule.
     .update({ scheduled_for: moved.toISOString(), leave_notified_at: null })
-    .eq("id", orderId);
+    .eq("id", orderId)
+    .eq("source", "phone")
+    // The same conditions as canDelay in OrderActions, enforced here because a
+    // server action is a public endpoint. In the WHERE clause rather than an
+    // early return so that a cancellation landing between the read above and
+    // this write wins: otherwise a refunded customer gets told their order is
+    // running late, and the cleared nudge queues a second push after that.
+    .in("status", ["confirmed", "preparing"])
+    .select("id")
+    .maybeSingle();
 
   if (error) return { ok: false, error: error.message };
+  if (!updated) return { ok: false, error: "That order isn't running — refresh the board." };
 
   after(async () => {
     await sendOrderPush(orderId, {
