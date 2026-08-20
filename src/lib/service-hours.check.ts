@@ -23,25 +23,25 @@ assert.equal(isOpen(at("2026-08-19T01:59:00+05:30")), true, "still open at 1:59 
 assert.equal(isOpen(at("2026-08-19T02:00:00+05:30")), false, "closed at 2:00 AM sharp");
 assert.equal(isOpen(at("2026-08-19T09:00:00+05:30")), false, "closed mid-morning");
 
-// --- isAcceptingOrders: stops 30 min before close ---
-assert.equal(isAcceptingOrders(at("2026-08-19T01:30:00+05:30")), true, "last order goes in at 1:30 AM");
-assert.equal(isAcceptingOrders(at("2026-08-19T01:31:00+05:30")), false, "no orders after 1:30 AM");
+// --- isAcceptingOrders: stops 15 min before close ---
+assert.equal(isAcceptingOrders(at("2026-08-19T01:45:00+05:30")), true, "last order goes in at 1:45 AM");
+assert.equal(isAcceptingOrders(at("2026-08-19T01:46:00+05:30")), false, "no orders after 1:45 AM");
 assert.equal(isAcceptingOrders(at("2026-08-18T11:00:00+05:30")), false, "no pre-open ordering");
 
 // --- pickupSlots ---
-// Ordering at 11:30 sharp: 30-min floor lands at 12:00, which is a slot boundary.
+// Ordering at 11:30 sharp: 15-min floor lands at 11:45, which is a slot boundary.
 let slots = pickupSlots(at("2026-08-18T11:30:00+05:30"));
-assert.equal(clockLabel(slots[0]), clockLabel(at("2026-08-18T12:00:00+05:30")), "earliest slot is +30 min");
+assert.equal(clockLabel(slots[0]), clockLabel(at("2026-08-18T11:45:00+05:30")), "earliest slot is +15 min");
 assert.equal(
   clockLabel(slots.at(-1)!),
   clockLabel(at("2026-08-19T02:00:00+05:30")),
   "last slot is the 2:00 AM close",
 );
-// Every slot must clear the 30-minute floor and sit inside opening hours.
+// Every slot must clear the 15-minute floor and sit inside opening hours.
 const now1 = at("2026-08-18T11:30:00+05:30");
 assert.ok(
   slots.every((s) => s - now1 >= MIN_LEAD_MINUTES * MIN),
-  "no slot may breach the 30-minute floor",
+  "no slot may breach the 15-minute floor",
 );
 assert.ok(
   slots.every((s) => isValidPickupTime(now1, s)),
@@ -50,31 +50,31 @@ assert.ok(
 
 // A ragged time rounds up to the next 15-minute boundary, never backwards.
 slots = pickupSlots(at("2026-08-18T13:07:00+05:30"));
-assert.equal(clockLabel(slots[0]), clockLabel(at("2026-08-18T13:45:00+05:30")), "13:07 + 30 = 13:37 -> 13:45");
+assert.equal(clockLabel(slots[0]), clockLabel(at("2026-08-18T13:30:00+05:30")), "13:07 + 15 = 13:22 -> 13:30");
 
 // Late-night ordering still works and stops at 2:00 AM.
 slots = pickupSlots(at("2026-08-19T01:20:00+05:30"));
 assert.deepEqual(
   slots.map(clockLabel),
-  [at("2026-08-19T02:00:00+05:30")].map(clockLabel),
-  "at 1:20 AM the only slot left is the 2:00 AM close",
+  [at("2026-08-19T01:45:00+05:30"), at("2026-08-19T02:00:00+05:30")].map(clockLabel),
+  "at 1:20 AM two slots remain before the 2:00 AM close",
 );
 
 // Closed means no slots at all.
 assert.deepEqual(pickupSlots(at("2026-08-18T09:00:00+05:30")), [], "no slots while closed");
-assert.deepEqual(pickupSlots(at("2026-08-19T01:45:00+05:30")), [], "no slots after ordering shuts");
+assert.deepEqual(pickupSlots(at("2026-08-19T01:46:00+05:30")), [], "no slots after ordering shuts");
 
 // REGRESSION: every offered slot must survive the server-side guard, at times
 // that are NOT on a whole minute. The earlier version of this file only ever
 // used whole-minute timestamps, which hid a real bug: serviceMinute() drops
 // seconds, so on a 15-minute boundary with seconds elapsed the earliest slot
-// came out 29m30s away and startPhoneOrder() refused the customer's own pick.
+// came out just under the floor and startPhoneOrder() refused the customer's own pick.
 for (const iso of [
   "2026-08-18T11:30:30+05:30", // opening minute, mid-minute
   "2026-08-18T13:45:20+05:30", // slot boundary, mid-minute
   "2026-08-18T20:00:45+05:30", // slot boundary, late in the minute
   "2026-08-18T20:07:13+05:30", // ragged minute and seconds
-  "2026-08-19T01:29:59+05:30", // one second before ordering shuts
+  "2026-08-19T01:44:59+05:30", // one second before ordering shuts
 ]) {
   const t = at(iso);
   const offered = pickupSlots(t);
@@ -86,15 +86,15 @@ for (const iso of [
     );
     assert.ok(
       slot - t >= MIN_LEAD_MINUTES * MIN,
-      `slot ${clockLabel(slot)} offered at ${iso} breaches the 30-minute floor`,
+      `slot ${clockLabel(slot)} offered at ${iso} breaches the 15-minute floor`,
     );
   }
 }
 
 // --- isValidPickupTime: the guard against a hand-crafted request ---
 const now2 = at("2026-08-18T20:00:00+05:30");
-assert.equal(isValidPickupTime(now2, at("2026-08-18T20:20:00+05:30")), false, "under the 30-minute floor");
-assert.equal(isValidPickupTime(now2, at("2026-08-18T20:30:00+05:30")), true, "exactly 30 minutes out");
+assert.equal(isValidPickupTime(now2, at("2026-08-18T20:10:00+05:30")), false, "under the 15-minute floor");
+assert.equal(isValidPickupTime(now2, at("2026-08-18T20:15:00+05:30")), true, "exactly 15 minutes out");
 assert.equal(isValidPickupTime(now2, at("2026-08-19T03:00:00+05:30")), false, "past closing");
 assert.equal(isValidPickupTime(now2, at("2026-08-19T13:00:00+05:30")), false, "tomorrow is not same-day");
 assert.equal(isValidPickupTime(now2, at("2026-08-18T19:00:00+05:30")), false, "in the past");

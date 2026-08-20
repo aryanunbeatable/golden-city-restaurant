@@ -11,7 +11,7 @@ const MINUTE_MS = 60 * 1000;
 
 export const OPEN_MINUTE = 11 * 60 + 30; // 11:30 AM, minutes past IST midnight
 export const CLOSE_MINUTE = 26 * 60; //     2:00 AM next day, as 26:00
-export const MIN_LEAD_MINUTES = 30;
+export const MIN_LEAD_MINUTES = 15;
 export const SLOT_MINUTES = 15;
 
 /** Minutes past IST midnight, where after-midnight reads as 24:00–26:00 so the
@@ -38,8 +38,8 @@ export function isOpen(now: number): boolean {
 }
 
 /** Can the link accept an order right now? Ordering stops early enough that
- *  the 30-minute floor still lands inside opening hours — so the last order
- *  goes in at 1:30 AM for a 2:00 AM pickup. */
+ *  the 15-minute floor still lands inside opening hours — so the last order
+ *  goes in at 1:45 AM for a 2:00 AM pickup. */
 export function isAcceptingOrders(now: number): boolean {
   const m = serviceMinute(now);
   return m >= OPEN_MINUTE && m <= CLOSE_MINUTE - MIN_LEAD_MINUTES;
@@ -56,7 +56,7 @@ export function pickupSlots(now: number): number[] {
     const instant = instantForServiceMinute(now, m);
     // Filtered through the same guard the server will apply, rather than by a
     // parallel calculation. serviceMinute() truncates seconds, so at 11:30:30
-    // the "+30 minutes" boundary lands at 12:00 — 29m30s away — and the guard
+    // the "+15 minutes" boundary lands at 11:45 — 14m30s away — and the guard
     // would reject the very slot the picker had just offered. Deriving the
     // list from the guard makes offered ⊆ accepted true by construction.
     if (isValidPickupTime(now, instant)) slots.push(instant);
