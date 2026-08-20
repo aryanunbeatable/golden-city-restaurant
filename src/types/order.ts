@@ -117,6 +117,9 @@ export interface OrderRow {
   /** Dine-in phone orders only — advisory headcount, no table is held. */
   party_size: number | null;
   payment_reference: string | null;
+  /** Phone orders only. Lets the reconcile sweep fetch the payment by id
+   *  instead of through Razorpay's lag-prone order list. */
+  razorpay_order_id: string | null;
   refunded_at: string | null;
 }
 

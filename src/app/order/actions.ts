@@ -154,6 +154,9 @@ export async function startPhoneOrder(input: StartOrderInput): Promise<StartOrde
     await Promise.all([
       recordRateLimitEvent("phone_order", phone),
       recordRateLimitEvent("phone_order", `ip:${ip}`),
+      // Best effort: if this write is lost the customer can still pay, and the
+      // reconcile sweep falls back to looking the order up by receipt.
+      supabase.from("orders").update({ razorpay_order_id: rzp.id }).eq("id", order.id),
     ]);
     return {
       ok: true,

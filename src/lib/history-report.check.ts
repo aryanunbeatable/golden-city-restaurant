@@ -39,6 +39,7 @@ function order(
     party_size: null,
     payment_reference: null,
     refunded_at: null,
+    razorpay_order_id: null,
     ...over,
   };
 }

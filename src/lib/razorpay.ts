@@ -63,6 +63,42 @@ export async function fetchOrder(orderId: string): Promise<RazorpayOrder> {
   return call<RazorpayOrder>(`/orders/${encodeURIComponent(orderId)}`);
 }
 
+/** Razorpay's own lookup by receipt — and our receipt is our order id. This
+ *  is what lets us find the payment for an order whose browser died before it
+ *  could hand us the payment id. */
+export async function findOrderByReceipt(receipt: string): Promise<RazorpayOrder | null> {
+  const res = await call<{ items?: RazorpayOrder[] }>(`/orders?receipt=${encodeURIComponent(receipt)}`);
+  const items = res.items ?? [];
+  // Razorpay does not enforce unique receipts; ours are order ids, so anything
+  // other than exactly one match is a situation we must not guess our way out of.
+  return items.length === 1 ? items[0] : null;
+}
+
+export async function fetchOrderPayments(razorpayOrderId: string): Promise<RazorpayPayment[]> {
+  const res = await call<{ items?: RazorpayPayment[] }>(
+    `/orders/${encodeURIComponent(razorpayOrderId)}/payments`,
+  );
+  return res.items ?? [];
+}
+
+/**
+ * The one payment an order may be settled from: captured, belonging to this
+ * Razorpay order, for exactly the amount we asked. A failed or authorized-only
+ * attempt is not money, and a mismatched amount is not this order's money.
+ * Pure so it can be checked without touching the network.
+ */
+export function settleablePayment(
+  payments: RazorpayPayment[],
+  razorpayOrderId: string,
+  expectedPaise: number,
+): RazorpayPayment | null {
+  return (
+    payments.find(
+      (p) => p.status === "captured" && p.order_id === razorpayOrderId && p.amount === expectedPaise,
+    ) ?? null
+  );
+}
+
 export async function refundPayment(paymentId: string): Promise<{ id: string }> {
   return call<{ id: string }>(`/payments/${encodeURIComponent(paymentId)}/refund`, {
     method: "POST",
