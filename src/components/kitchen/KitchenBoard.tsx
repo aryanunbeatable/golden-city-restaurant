@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabase } from "@/lib/supabase/client";
+import { untilLabel } from "@/lib/order-clock";
 import { since } from "@/lib/orders";
 import { businessDayCutoffMs, msUntilNextBusinessDay } from "@/lib/business-day";
 import { clockLabel } from "@/lib/service-hours";
@@ -56,16 +57,6 @@ function cookStartMs(order: OrderRow): number | null {
 
 /** "in 6h 5m" / "in 45 min" / "any moment". clock() is mm:ss, which reads as
  *  nonsense once a booking is hours out — "366:44" is not a time. */
-function untilLabel(ms: number): string {
-  const mins = Math.floor(ms / 60_000);
-  if (mins >= 60) {
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    return m === 0 ? `in ${h}h` : `in ${h}h ${m}m`;
-  }
-  return mins >= 1 ? `in ${mins} min` : "any moment";
-}
-
 /** Approved, scheduled, and not yet time to start. */
 function isUpcoming(order: OrderRow, now: number): boolean {
   const start = cookStartMs(order);

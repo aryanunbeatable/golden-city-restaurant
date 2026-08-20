@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { getSupabase } from "@/lib/supabase/client";
 import { money } from "@/lib/cart";
 import { clockLabel } from "@/lib/service-hours";
+import { countdownLabel, scheduledPhase } from "@/lib/order-clock";
 import type { OrderItemRow, OrderRow } from "@/types/order";
 
 type LoadState =
@@ -13,17 +14,30 @@ type LoadState =
   | { kind: "ready"; order: OrderRow; items: OrderItemRow[] };
 
 /**
- * Scheduled phone orders are a different shape of wait to a table order: the
- * customer already knows when the food is due, so a live countdown would only
- * invite them to stare at it. The promise here is the ready-by time, and the
- * state of the order against it.
+ * Scheduled phone orders are a different shape of wait to a table order. A
+ * table order is one countdown from confirmation to food; this one has two
+ * anchors — when the kitchen starts, and when the food is due — with a long
+ * dead stretch before the first of them.
+ *
+ * So it runs two countdowns rather than one, and both are derived from the
+ * clock rather than from status: nothing writes 'preparing', so there is no
+ * event that says cooking began. See order-clock.ts. The copy hedges to match.
  */
 export function PhoneOrderTracker({ orderId }: { orderId: string }) {
   const [state, setState] = useState<LoadState>({ kind: "loading" });
 
+  // Ticks the two countdowns. One second is enough — the coarse label for a
+  // multi-hour wait only changes once a minute anyway.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+
+    async function load() {
       const { data, error } = await getSupabase()
         .from("orders")
         .select("*, order_items(*)")
@@ -31,16 +45,34 @@ export function PhoneOrderTracker({ orderId }: { orderId: string }) {
         .single();
       if (cancelled) return;
       if (error || !data) {
-        setState({ kind: "error", message: "We couldn't find that order." });
-      } else {
-        const { order_items, ...order } = data as OrderRow & { order_items: OrderItemRow[] };
-        setState({ kind: "ready", order: order as OrderRow, items: order_items });
+        // Only surface an error on the very first load. A refetch that fails
+        // because the tab woke up on a dead connection must not blank out an
+        // order that is already on screen.
+        setState((prev) => (prev.kind === "ready" ? prev : { kind: "error", message: "We couldn't find that order." }));
+        return;
       }
-    })().catch((e: unknown) => {
-      if (!cancelled) setState({ kind: "error", message: e instanceof Error ? e.message : String(e) });
+      const { order_items, ...order } = data as OrderRow & { order_items: OrderItemRow[] };
+      setState({ kind: "ready", order: order as OrderRow, items: order_items });
+    }
+
+    void load().catch((e: unknown) => {
+      if (!cancelled) {
+        setState((prev) => (prev.kind === "ready" ? prev : { kind: "error", message: e instanceof Error ? e.message : String(e) }));
+      }
     });
+
+    // Mobile browsers suspend the realtime socket on a backgrounded tab, and
+    // Supabase does not replay what was missed on reconnect. Without this, a
+    // tracker left in the background can sit on "Confirmed" indefinitely while
+    // the food is already packed and waiting at the counter.
+    function onVisible() {
+      if (document.visibilityState === "visible") void load();
+    }
+    document.addEventListener("visibilitychange", onVisible);
+
     return () => {
       cancelled = true;
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [orderId]);
 
@@ -95,7 +127,7 @@ export function PhoneOrderTracker({ orderId }: { orderId: string }) {
       </div>
 
       <div className="flex min-h-[248px] flex-col items-center justify-center gap-4 rounded-[22px] border border-ink/[0.09] bg-surface px-5 py-[26px] text-center">
-        <PhoneStatusVisual order={order} readyBy={readyBy} takeaway={takeaway} />
+        <PhoneStatusVisual order={order} readyBy={readyBy} takeaway={takeaway} now={now} />
       </div>
 
       <div className="flex flex-col gap-2.5 rounded-2xl border border-ink/[0.09] bg-surface px-4 pt-4 pb-3.5">
@@ -138,10 +170,12 @@ function PhoneStatusVisual({
   order,
   readyBy,
   takeaway,
+  now,
 }: {
   order: OrderRow;
   readyBy: string | null;
   takeaway: boolean;
+  now: number;
 }) {
   if (order.status === "cancelled") {
     return (
@@ -183,38 +217,159 @@ function PhoneStatusVisual({
   }
 
   if (order.status === "ready" || order.status === "served") {
+    return <ReadyVisual order={order} takeaway={takeaway} now={now} />;
+  }
+
+  // confirmed — accepted and scheduled. Everything from here is clock-derived.
+  if (!order.scheduled_for) {
     return (
-      <div className="animate-gc-pop-ready flex flex-col items-center gap-4">
-        <span className="flex h-[96px] w-[96px] items-center justify-center rounded-full bg-primary font-display text-4xl text-secondary shadow-[0_12px_30px_rgba(139,29,14,0.3)]">
-          ✦
+      <div className="animate-gc-rise flex flex-col items-center gap-4">
+        <span className="flex h-24 w-24 items-center justify-center rounded-full bg-veg text-[44px] font-light text-surface">
+          ✓
         </span>
-        <span className="font-display text-2xl text-primary">Ready!</span>
-        <span className="text-[12.5px] leading-[1.6] text-muted">
-          {takeaway
-            ? "Your order is packed and waiting at the counter."
-            : "Your table's food is coming out now."}
-        </span>
+        <span className="text-[19px] font-extrabold text-ink">Confirmed</span>
       </div>
     );
   }
 
-  // confirmed / preparing — accepted and scheduled.
+  const phase = scheduledPhase(new Date(order.scheduled_for).getTime(), order.estimated_prep_minutes, now);
+  const cookingAt = clockLabel(
+    new Date(order.scheduled_for).getTime() - order.estimated_prep_minutes * 60_000,
+  );
+
+  if (phase.kind === "overrun") {
+    return (
+      <div key="overrun" className="animate-gc-rise flex w-full flex-col items-center gap-4">
+        <CountdownRing label="ALMOST THERE" value="00:00" active />
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[19px] font-extrabold text-ink">Almost there</span>
+          <span className="text-[12.5px] leading-[1.6] text-muted">
+            Running a couple of minutes over — the kitchen will call it ready any moment.
+          </span>
+        </div>
+        <LeaveNudge takeaway={takeaway} />
+      </div>
+    );
+  }
+
+  if (phase.kind === "pre_cook") {
+    return (
+      // Keyed so crossing into the cooking phase replays the entrance rather
+      // than silently swapping the numbers under the customer.
+      <div key="pre-cook" className="animate-gc-rise flex w-full flex-col items-center gap-4">
+        <CountdownRing label="COOKING STARTS IN" value={countdownLabel(phase.msLeft)} active={false} />
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[19px] font-extrabold text-ink">You&apos;re booked in</span>
+          <span className="text-[12.5px] leading-[1.6] text-muted">
+            We&apos;ll start cooking around <strong className="text-ink">{cookingAt}</strong> so it&apos;s hot
+            {takeaway ? " when you collect at " : " when it reaches your table at "}
+            <strong className="text-ink">{readyBy}</strong>.
+          </span>
+        </div>
+        {phase.leaveNow && <LeaveNudge takeaway={takeaway} />}
+      </div>
+    );
+  }
+
   return (
-    <div className="animate-gc-rise flex flex-col items-center gap-4">
-      <span className="flex h-24 w-24 items-center justify-center rounded-full bg-veg text-[44px] font-light text-surface">
-        ✓
-      </span>
+    <div key="cooking" className="animate-gc-rise flex w-full flex-col items-center gap-4">
+      <CountdownRing label="FOOD READY IN" value={countdownLabel(phase.msLeft)} active />
       <div className="flex flex-col gap-1.5">
-        <span className="text-[19px] font-extrabold text-ink">Confirmed</span>
-        {readyBy && (
-          <span className="font-display text-[26px] text-primary">Ready by {readyBy}</span>
-        )}
+        <span className="text-[19px] font-extrabold text-ink">On the fire</span>
         <span className="text-[12.5px] leading-[1.6] text-muted">
-          {takeaway
-            ? "Come to the counter at that time and it'll be waiting."
-            : "Come in at that time and we'll have it ready."}
+          Your dishes should be cooking now — ready by <strong className="text-ink">{readyBy}</strong>.
         </span>
       </div>
+      <div className="relative h-[7px] w-full overflow-hidden rounded-full bg-primary/[0.12]">
+        <span
+          className="absolute inset-0 rounded-full bg-gradient-to-r from-primary to-secondary transition-[width] duration-1000 ease-linear"
+          style={{ width: `${Math.max(2, Math.round(phase.progress * 100))}%` }}
+        />
+        <span className="animate-gc-simmer absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+      </div>
+      {phase.leaveNow && <LeaveNudge takeaway={takeaway} />}
+    </div>
+  );
+}
+
+/**
+ * Both timers share a ring; `active` is what separates them. Waiting for the
+ * kitchen is a calm, muted dial — nothing is happening yet and the screen
+ * should not pretend otherwise. Once the food is on, it picks up the warm
+ * gradient the table tracker uses.
+ */
+function CountdownRing({ label, value, active }: { label: string; value: string; active: boolean }) {
+  return (
+    <div className="relative flex h-[132px] w-[132px] items-center justify-center">
+      <span className={`absolute inset-0 rounded-full border-[3px] ${active ? "border-primary/[0.14]" : "border-ink/[0.10]"}`} />
+      <span
+        className={`animate-gc-ring-slow absolute inset-0 rounded-full border-[3px] border-transparent ${
+          active ? "border-t-primary border-r-secondary" : "border-t-tertiary/60"
+        }`}
+      />
+      <div className="flex flex-col items-center gap-0.5">
+        <span
+          className={`font-extrabold tabular-nums ${active ? "text-primary" : "text-tertiary"} ${
+            value.length > 6 ? "text-[24px]" : "text-[30px]"
+          }`}
+        >
+          {value}
+        </span>
+        <span className="text-[9px] font-semibold tracking-[.16em] text-muted">{label}</span>
+      </div>
+    </div>
+  );
+}
+
+/** Fires at LEAVE_LEAD_MS before the promised time — see order-clock.ts. */
+function LeaveNudge({ takeaway }: { takeaway: boolean }) {
+  return (
+    <div className="animate-gc-pop-confirm flex w-full items-center gap-2.5 rounded-2xl border border-secondary/45 bg-secondary/[0.14] px-3.5 py-3 text-left">
+      <span className="animate-gc-pulse text-lg">🏃</span>
+      <span className="text-[12px] leading-[1.55] text-ink">
+        <strong>Time to head over</strong> —{" "}
+        {takeaway
+          ? "it'll be at the counter in under 10 minutes."
+          : "your table's food comes out in under 10 minutes."}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Ready, escalating on how long it has sat there. ready_at is stamped by the
+ * database trigger, so this needs no new column. The tone stays warm at every
+ * step: this is a customer who has already paid, so it states the fact and
+ * lets that do the work rather than telling them off.
+ */
+function ReadyVisual({ order, takeaway, now }: { order: OrderRow; takeaway: boolean; now: number }) {
+  const waitingMin = order.ready_at ? Math.floor((now - new Date(order.ready_at).getTime()) / 60_000) : 0;
+  const cooling = waitingMin >= 5;
+  const cold = waitingMin >= 15;
+
+  return (
+    <div className="animate-gc-pop-ready flex w-full flex-col items-center gap-4">
+      <span
+        className={`flex h-[96px] w-[96px] items-center justify-center rounded-full font-display text-4xl text-secondary shadow-[0_12px_30px_rgba(139,29,14,0.3)] ${
+          cooling ? "animate-gc-pulse bg-[#8B6C08]" : "bg-primary"
+        }`}
+      >
+        ✦
+      </span>
+      <span className="font-display text-2xl text-primary">
+        {cold ? "Still waiting for you" : cooling ? "Ready and waiting" : "Ready!"}
+      </span>
+      <span className="text-[12.5px] leading-[1.6] text-muted">
+        {!takeaway
+          ? cold
+            ? `Your table's food has been up ${waitingMin} minutes — come in and we'll bring it out.`
+            : "Your table's food is coming out now."
+          : cold
+            ? `It's been at the counter ${waitingMin} minutes and going cold — come grab it.`
+            : cooling
+              ? "Best eaten hot — we're keeping it warm for you at the counter."
+              : "Your order is packed and waiting at the counter."}
+      </span>
     </div>
   );
 }
