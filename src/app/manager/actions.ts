@@ -8,6 +8,8 @@ import {
   isValidSessionCookieValue,
 } from "@/lib/manager-session";
 import { getServiceSupabase } from "@/lib/supabase/server";
+import { refundPayment } from "@/lib/razorpay";
+import { isValidPickupTime } from "@/lib/service-hours";
 import type { PaymentMethod } from "@/types/order";
 
 export interface ActionResult {
@@ -95,4 +97,97 @@ export async function voidOrder(orderId: string): Promise<ActionResult> {
   // A silent no-op would have the UI cheerfully show the order as voided.
   if (!data || data.length === 0) return { ok: false, error: "That order no longer exists." };
   return { ok: true };
+}
+
+// ---------- phone orders ----------
+
+/**
+ * Customer numbers live in order_contacts, which has RLS on and no policies —
+ * the browser's anon key cannot read them (migration 0009). The approval queue
+ * fetches them through here instead, behind the manager session.
+ */
+export async function getOrderPhones(orderIds: string[]): Promise<Record<string, string>> {
+  if (!(await isManager()) || orderIds.length === 0) return {};
+
+  const { data, error } = await getServiceSupabase()
+    .from("order_contacts")
+    .select("order_id, phone")
+    .in("order_id", orderIds);
+
+  if (error || !data) return {};
+  return Object.fromEntries((data as { order_id: string; phone: string }[]).map((r) => [r.order_id, r.phone]));
+}
+
+/**
+ * Accept a paid phone order so the kitchen can see it. `readyBy` lets the
+ * counter push the promised time out when the kitchen is slammed; it is
+ * re-validated here because the client could post anything.
+ */
+export async function approvePhoneOrder(orderId: string, readyBy?: number): Promise<ActionResult> {
+  if (!(await isManager())) return { ok: false, error: "Session expired — unlock the dashboard again." };
+
+  const patch: Record<string, unknown> = { status: "confirmed" };
+  if (readyBy !== undefined) {
+    if (!isValidPickupTime(Date.now(), readyBy)) {
+      return { ok: false, error: "That ready-by time isn't available." };
+    }
+    patch.scheduled_for = new Date(readyBy).toISOString();
+  }
+
+  const { data, error } = await getServiceSupabase()
+    .from("orders")
+    .update(patch)
+    .eq("id", orderId)
+    // Only a paid, unapproved order can be approved — never re-approve one the
+    // kitchen has already started, and never approve one that isn't paid for.
+    .eq("status", "waiting_confirmation")
+    .eq("payment_status", "paid")
+    .select("id");
+
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) return { ok: false, error: "That order isn't waiting for approval any more." };
+  return { ok: true };
+}
+
+/**
+ * Turn a paid phone order away and refund it. The cancel and the refund are
+ * deliberately separate: if Razorpay refuses, the order is still cancelled and
+ * the failure is reported, because silently leaving it live would send food the
+ * kitchen was told not to make — and silently swallowing the error would leave
+ * a customer out of pocket with nobody aware.
+ */
+export async function rejectPhoneOrder(orderId: string): Promise<ActionResult> {
+  if (!(await isManager())) return { ok: false, error: "Session expired — unlock the dashboard again." };
+
+  const supabase = getServiceSupabase();
+  const { data: order, error: readError } = await supabase
+    .from("orders")
+    .select("id, status, payment_status, payment_reference, refunded_at")
+    .eq("id", orderId)
+    .single();
+
+  if (readError || !order) return { ok: false, error: "We couldn't find that order." };
+
+  const { error: cancelError } = await supabase
+    .from("orders")
+    .update({ status: "cancelled" })
+    .eq("id", orderId);
+  if (cancelError) return { ok: false, error: cancelError.message };
+
+  const reference = order.payment_reference as string | null;
+  if (order.payment_status !== "paid" || !reference || order.refunded_at) {
+    return { ok: true }; // nothing was taken, or it was already sent back
+  }
+
+  try {
+    await refundPayment(reference);
+    await supabase.from("orders").update({ refunded_at: new Date().toISOString() }).eq("id", orderId);
+    return { ok: true };
+  } catch (e) {
+    const why = e instanceof Error ? e.message : String(e);
+    return {
+      ok: false,
+      error: `Order cancelled, but the refund failed: ${why}. Refund it from the Razorpay dashboard.`,
+    };
+  }
 }

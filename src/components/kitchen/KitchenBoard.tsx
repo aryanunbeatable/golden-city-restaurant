@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { getSupabase } from "@/lib/supabase/client";
 import { since } from "@/lib/orders";
 import { businessDayCutoffMs, msUntilNextBusinessDay } from "@/lib/business-day";
+import { clockLabel } from "@/lib/service-hours";
 import { signOutKitchen } from "@/app/kitchen/actions";
 import {
   isTableSource,
@@ -45,6 +46,32 @@ function timeLeftLabel(order: OrderRow, now: number): string {
   return left > 0 ? `${clock(left)} left` : "Overdue";
 }
 
+/** A scheduled order isn't due yet if the kitchen doesn't need to start it.
+ *  estimated_prep_minutes on a phone order is its slowest dish, so this is the
+ *  moment everything has to go on to be ready at once. */
+function cookStartMs(order: OrderRow): number | null {
+  if (!order.scheduled_for) return null;
+  return new Date(order.scheduled_for).getTime() - order.estimated_prep_minutes * 60_000;
+}
+
+/** "in 6h 5m" / "in 45 min" / "any moment". clock() is mm:ss, which reads as
+ *  nonsense once a booking is hours out — "366:44" is not a time. */
+function untilLabel(ms: number): string {
+  const mins = Math.floor(ms / 60_000);
+  if (mins >= 60) {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return m === 0 ? `in ${h}h` : `in ${h}h ${m}m`;
+  }
+  return mins >= 1 ? `in ${mins} min` : "any moment";
+}
+
+/** Approved, scheduled, and not yet time to start. */
+function isUpcoming(order: OrderRow, now: number): boolean {
+  const start = cookStartMs(order);
+  return start !== null && now < start && (order.status === "confirmed" || order.status === "preparing");
+}
+
 const COLUMNS: {
   key: string;
   title: string;
@@ -52,6 +79,13 @@ const COLUMNS: {
   emptyText: string;
   statuses: OrderStatus[];
 }[] = [
+  {
+    key: "scheduled",
+    title: "SCHEDULED",
+    dotClassName: "bg-ink/30",
+    emptyText: "Nothing booked ahead. Phone orders appear here until it's time to start them.",
+    statuses: ["confirmed", "preparing"],
+  },
   {
     key: "new",
     title: "NEW",
@@ -224,11 +258,28 @@ export function KitchenBoard() {
       ) : (
         // One long scroll with sticky column headers on a phone; three
         // independently-scrolling columns once there's width for them.
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-px overflow-y-auto bg-ink/[0.12] md:grid-cols-3 md:overflow-hidden">
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-px overflow-y-auto bg-ink/[0.12] md:grid-cols-2 md:overflow-hidden xl:grid-cols-4">
           {COLUMNS.map((col) => {
             const colOrders = orders
-              .filter((o) => col.statuses.includes(o.status))
-              .sort((a, b) => a.created_at.localeCompare(b.created_at));
+              .filter((o) => {
+                if (!col.statuses.includes(o.status)) return false;
+                // A phone order still waiting on the counter's approval must
+                // not reach the kitchen at all.
+                if (o.source === "phone" && o.status === "waiting_confirmation") return false;
+                // Booked-ahead work sits in SCHEDULED until its start time,
+                // then moves itself into PREPARING. Table orders have no
+                // scheduled_for and are unaffected either way.
+                const upcoming = isUpcoming(o, now);
+                return col.key === "scheduled" ? upcoming : !upcoming;
+              })
+              // Scheduled work is ordered by when it must go on, not when it
+              // was booked — the 11pm order booked at noon must not sit above
+              // the 1pm one booked at 12:45.
+              .sort((a, b) =>
+                col.key === "scheduled"
+                  ? (cookStartMs(a) ?? 0) - (cookStartMs(b) ?? 0)
+                  : a.created_at.localeCompare(b.created_at),
+              );
             return (
               <div key={col.key} className="flex flex-col bg-background md:min-h-0">
                 <div className="sticky top-0 z-10 flex flex-none items-center gap-[9px] border-b border-ink/10 bg-surface px-3.5 py-[11px] md:static">
@@ -283,8 +334,24 @@ function OrderCard({
   const isDone = order.status === "ready";
   const table = isTableSource(order.source);
 
+  const scheduled = order.scheduled_for ? new Date(order.scheduled_for).getTime() : null;
+  const start = cookStartMs(order);
+  const upcoming = isUpcoming(order, now);
+  // Amber once it should be on, red once that moment has passed — a booked
+  // order that gets forgotten is worse than a walk-in that waits.
+  const late = start !== null && !upcoming && isCooking && now > start;
+  const dueSoon = start !== null && upcoming && start - now <= 10 * 60_000;
+
   return (
-    <div className="animate-gc-rise flex flex-col gap-[9px] rounded-xl border border-ink/10 bg-surface p-[11px] shadow-[0_1px_3px_rgba(42,27,18,0.06)]">
+    <div
+      className={`animate-gc-rise flex flex-col gap-[9px] rounded-xl border bg-surface p-[11px] shadow-[0_1px_3px_rgba(42,27,18,0.06)] ${
+        late
+          ? "border-non-veg/60 ring-1 ring-non-veg/40"
+          : dueSoon
+            ? "border-secondary/70 ring-1 ring-secondary/40"
+            : "border-ink/10"
+      }`}
+    >
       <div className="flex items-center gap-2">
         <span
           className={`rounded-[7px] px-[11px] py-2 text-[13px] font-extrabold ${table ? "bg-tertiary text-surface" : "bg-primary text-surface"}`}
@@ -294,6 +361,30 @@ function OrderCard({
         <span className="text-[10px] font-bold tracking-[.08em] text-muted">{order.id.slice(0, 8).toUpperCase()}</span>
         <span className="ml-auto text-[10.5px] font-semibold text-muted">{since(order.created_at, now)}</span>
       </div>
+
+      {scheduled !== null && (
+        <div
+          className={`flex items-center gap-2 rounded-lg px-2.5 py-2 ${
+            late ? "bg-non-veg/[0.12]" : dueSoon ? "bg-secondary/[0.2]" : "bg-ink/[0.05]"
+          }`}
+        >
+          <span className="text-[10px] font-bold tracking-[.1em] text-muted">READY BY</span>
+          <span className={`text-[15px] font-extrabold ${late ? "text-non-veg" : "text-ink"}`}>
+            {clockLabel(scheduled)}
+          </span>
+          <span className="ml-auto text-[10.5px] font-bold text-muted">
+            {late ? "START NOW" : upcoming ? `starts ${untilLabel(Math.max(0, start! - now))}` : "on the fire"}
+          </span>
+        </div>
+      )}
+
+      {order.customer_name && (
+        <span className="text-[13px] font-extrabold text-ink">
+          {order.customer_name}
+          {order.service_type === "dine_in" && order.party_size ? ` · ${order.party_size} people` : ""}
+          {order.service_type === "takeaway" ? " · takeaway" : ""}
+        </span>
+      )}
 
       <div className="flex flex-col gap-2 border-t border-dashed border-ink/[0.14] pt-2.5">
         {order.order_items.map((it) => (
@@ -308,12 +399,12 @@ function OrderCard({
       </div>
 
       <div className="flex items-center gap-2 pt-0.5">
-        {(isNew || isDone) && (
+        {(isNew || isDone || upcoming) && (
           <span className="rounded-full border border-secondary/40 bg-secondary/[0.16] px-2 py-1.5 text-[10px] font-bold text-[#8B6C08]">
             {isDone ? "Ready to serve" : `${order.estimated_prep_minutes} min prep`}
           </span>
         )}
-        {isCooking && (
+        {isCooking && !upcoming && (
           <span className="rounded-full bg-tertiary px-2 py-1.5 text-[10.5px] font-extrabold text-surface tabular-nums">
             {timeLeftLabel(order, now)}
           </span>
@@ -326,7 +417,9 @@ function OrderCard({
             Accept Order
           </button>
         )}
-        {isCooking && (
+        {/* No Mark Ready before it has even started — the counter already
+            accepted this one, so the kitchen's only job is to begin on time. */}
+        {isCooking && !upcoming && (
           <button
             onClick={() => onMarkReady(order.id)}
             className="ml-auto rounded-[9px] bg-primary px-3.5 py-2.5 text-[11.5px] font-extrabold text-surface transition hover:bg-[#7A180B]"

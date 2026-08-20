@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { usePendingApprovals } from "@/lib/use-pending-approvals";
 
 const LINKS = [
   { key: "new-order", href: "/manager/new-order", label: "New order" },
@@ -13,6 +16,7 @@ export type ManagerNavKey = (typeof LINKS)[number]["key"];
 // added in three places. Wraps on narrow screens instead of overflowing —
 // the counter terminal isn't always a 16:9 monitor.
 export function ManagerNav({ active, children }: { active: ManagerNavKey; children?: ReactNode }) {
+  const pending = usePendingApprovals();
   return (
     <div className="flex flex-none flex-wrap items-center gap-x-2.5 gap-y-2 border-b border-ink/10 px-4 py-3 md:px-[18px]">
       <Link href="/manager" className="text-xl font-bold text-primary">
@@ -36,6 +40,11 @@ export function ManagerNav({ active, children }: { active: ManagerNavKey; childr
             }
           >
             {l.label}
+            {l.key === "orders" && pending > 0 && (
+              <span className="ml-1.5 inline-flex min-w-[18px] items-center justify-center rounded-full bg-secondary px-1 py-0.5 text-[10px] font-extrabold text-ink">
+                {pending}
+              </span>
+            )}
           </Link>
         ))}
       </div>

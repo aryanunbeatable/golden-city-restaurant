@@ -62,6 +62,19 @@ assert.equal(cart.lines[1].variant_name, "Non-Veg");
 assert.equal(cart.lines[1].is_veg, false, "veg flag follows the chosen variant");
 assert.equal(cart.lines[1].variant_name_hi, "नॉन-वेज", "Hindi snapshotted for the kitchen toggle");
 assert.equal(cart.prepMinutes, 11, "mean prep across distinct lines");
+assert.equal(cart.prepMinutesMax, 12, "slowest dish, for scheduled cook-start");
+
+// A scheduled order must cook backwards from its slowest dish, never the mean —
+// otherwise a fast drink alongside a slow curry starts far too late.
+const mixed = ok(
+  priceCart(menu, [
+    { itemId: "veg-soup", variantName: null, qty: 1 }, // 10 min
+    { itemId: "manchow", variantName: "Veg", qty: 1 }, // 12 min
+  ]),
+);
+assert.equal(mixed.prepMinutes, 11, "mean sits between the two");
+assert.equal(mixed.prepMinutesMax, 12, "max is the slowest dish");
+assert.ok(mixed.prepMinutesMax >= mixed.prepMinutes, "max can never be under the mean");
 
 // A single item still prices correctly.
 cart = ok(priceCart(menu, [{ itemId: "veg-soup", variantName: null, qty: 1 }]));

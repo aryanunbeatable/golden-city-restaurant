@@ -106,7 +106,10 @@ export async function startPhoneOrder(input: StartOrderInput): Promise<StartOrde
       source: "phone",
       placed_by: "customer",
       status: "awaiting_payment",
-      estimated_prep_minutes: cart.prepMinutes,
+      // Slowest dish, not the mean: the kitchen cooks backwards from a promised
+      // time and everything has to be ready at once. Table orders keep using
+      // the mean, so nothing shifts under the kitchen mid-service.
+      estimated_prep_minutes: cart.prepMinutesMax,
       service_type: input.serviceType,
       scheduled_for: new Date(input.scheduledFor).toISOString(),
       customer_name: name,

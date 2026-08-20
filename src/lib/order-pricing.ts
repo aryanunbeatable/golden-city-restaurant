@@ -27,7 +27,14 @@ export interface PricedCart {
   total: number;
   /** Paise, because that is the only unit Razorpay accepts. */
   totalPaise: number;
+  /** Mean across distinct lines — what cartTotals() shows a table guest. */
   prepMinutes: number;
+  /**
+   * The slowest dish in the order. Scheduled orders cook backwards from a
+   * promised time, so the mean would start a coffee-and-biryani order on the
+   * coffee's clock and serve it late. Everything has to be ready at once.
+   */
+  prepMinutesMax: number;
 }
 
 const MAX_LINES = 40;
@@ -92,11 +99,11 @@ export function priceCart(menu: Menu, requested: RequestedLine[]): { cart: Price
   const total = lines.reduce((sum, l) => sum + l.unit_price * l.quantity, 0);
   if (total <= 0) return { error: "That order comes to nothing." };
 
+  const preps = requested.map((r) => findItem(menu, r.itemId)?.prepTimeMinutes ?? 0);
   // Mean prep across distinct lines, matching cartTotals() so the customer's
   // estimate and the kitchen's agree.
-  const prepMinutes = Math.round(
-    requested.reduce((sum, r) => sum + (findItem(menu, r.itemId)?.prepTimeMinutes ?? 0), 0) / requested.length,
-  );
+  const prepMinutes = Math.round(preps.reduce((sum, p) => sum + p, 0) / preps.length);
+  const prepMinutesMax = Math.max(...preps);
 
   return {
     cart: {
@@ -106,6 +113,7 @@ export function priceCart(menu: Menu, requested: RequestedLine[]): { cart: Price
       // truncate so a future ₹99.50 can't quietly lose a paisa.
       totalPaise: Math.round(total * 100),
       prepMinutes,
+      prepMinutesMax,
     },
   };
 }
