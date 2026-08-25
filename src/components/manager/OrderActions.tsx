@@ -1,14 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { delayOrder, settleOrderPayment, voidOrder as voidOrderAction } from "@/app/manager/actions";
-import {
-  COUNTER_PAYMENT_OPTIONS,
-  paymentLabel,
-  type OrderRow,
-  type OrderStatus,
-  type PaymentMethod,
-} from "@/types/order";
+import { delayOrder, voidOrder as voidOrderAction } from "@/app/manager/actions";
+import { paymentLabel, type OrderRow, type OrderStatus } from "@/types/order";
 
 export const STATUS_STYLE: Record<OrderStatus, { label: string; className: string }> = {
   // Present for completeness only — every query that feeds these screens
@@ -37,10 +31,14 @@ export function OrderActions({
   order,
   onApplied,
   onError,
+  showPaymentStatus = true,
 }: {
   order: OrderRow;
   onApplied: (patch: Partial<OrderRow>) => void;
   onError: (message: string) => void;
+  /** History already renders its own payment label next to this component —
+   *  set false there so the two don't say the same thing twice. */
+  showPaymentStatus?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const [confirmingVoid, setConfirmingVoid] = useState(false);
@@ -69,13 +67,6 @@ export function OrderActions({
     }
   }
 
-  function settle(method: PaymentMethod) {
-    return run(() => settleOrderPayment(order.id, method), {
-      payment_method: method,
-      payment_status: "paid",
-    });
-  }
-
   function voidOrder() {
     setConfirmingVoid(false);
     return run(() => voidOrderAction(order.id), { status: "cancelled" });
@@ -93,21 +84,18 @@ export function OrderActions({
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      {settled ? (
-        <span className="rounded-full border border-veg/40 bg-veg/[0.12] px-2.5 py-1.5 text-[11px] font-bold text-veg">
+      {/* Payment is collected from /manager/billing now, not here — this is
+          just a status readout, matching the settled pill it replaces. */}
+      {showPaymentStatus && (
+        <span
+          className={
+            settled
+              ? "rounded-full border border-veg/40 bg-veg/[0.12] px-2.5 py-1.5 text-[11px] font-bold text-veg"
+              : "rounded-full border border-ink/20 bg-ink/[0.07] px-2.5 py-1.5 text-[11px] font-bold text-muted"
+          }
+        >
           {paymentLabel(order.payment_method, order.payment_status)}
         </span>
-      ) : (
-        COUNTER_PAYMENT_OPTIONS.map((p) => (
-          <button
-            key={p.value}
-            disabled={busy}
-            onClick={() => settle(p.value)}
-            className="rounded-lg border border-ink/[0.16] px-2.5 py-1.5 text-[11px] font-bold text-ink transition hover:border-veg hover:text-veg disabled:opacity-50"
-          >
-            {p.label}
-          </button>
-        ))
       )}
       {canDelay &&
         (choosingDelay ? (

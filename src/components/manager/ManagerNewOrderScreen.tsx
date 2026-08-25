@@ -4,13 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import type { Menu } from "@/types/menu";
 import {
-  COUNTER_PAYMENT_OPTIONS,
   COUNTER_SOURCE_OPTIONS,
   ORDER_SOURCE_OPTIONS,
   PAYMENT_METHOD_LABELS,
   autoPaymentMethod,
   type OrderSource,
-  type PaymentMethod,
 } from "@/types/order";
 import { useCart, money } from "@/lib/cart";
 import { placeOrder } from "@/lib/orders";
@@ -29,16 +27,16 @@ export function ManagerNewOrderScreen({ menu }: { menu: Menu }) {
   const [sentOrderId, setSentOrderId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // "later" = guest hasn't settled yet; recorded at the counter afterwards.
-  const [payment, setPayment] = useState<PaymentMethod | "later">("later");
   // Narrow screens have no room for a permanent side panel, so the kitchen
   // token becomes a bottom sheet behind a summary bar. Ignored from md up.
   const [panelOpen, setPanelOpen] = useState(false);
 
   const sourceLabel = ORDER_SOURCE_OPTIONS.find((s) => s.value === source)?.label ?? "";
-  // Swiggy/Zomato settle through the platform, so there's nothing to ask.
-  const autoMethod = source ? autoPaymentMethod(source) : null;
-  const method = autoMethod ?? (payment === "later" ? null : payment);
+  // Swiggy/Zomato settle through the platform automatically. Every other
+  // source (table, parcel) is always pay-after-the-meal at the counter — the
+  // guest hasn't eaten yet, so there is nothing to ask here. Collecting
+  // payment is /manager/billing's job, not order entry's.
+  const method = source ? autoPaymentMethod(source) : null;
 
   async function sendToKitchen() {
     if (!source) return;
@@ -66,7 +64,6 @@ export function ManagerNewOrderScreen({ menu }: { menu: Menu }) {
   function newOrder() {
     setSentOrderId(null);
     setSource(null);
-    setPayment("later");
     setPanelOpen(false);
     setError(null);
   }
@@ -227,27 +224,9 @@ export function ManagerNewOrderScreen({ menu }: { menu: Menu }) {
               <div className="flex flex-none flex-col gap-2.5 border-t border-ink/10 px-4 pt-[13px] pb-4">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[10.5px] font-bold tracking-[.14em] text-muted">PAYMENT</span>
-                  {autoMethod ? (
-                    <span className="rounded-full bg-tertiary px-[9px] py-[5px] text-[10.5px] font-bold text-surface">
-                      {PAYMENT_METHOD_LABELS[autoMethod]}
-                    </span>
-                  ) : (
-                    <div className="flex gap-1.5">
-                      {[...COUNTER_PAYMENT_OPTIONS, { value: "later" as const, label: "Pay later" }].map((p) => (
-                        <button
-                          key={p.value}
-                          onClick={() => setPayment(p.value)}
-                          className={
-                            p.value === payment
-                              ? "rounded-lg bg-primary px-2.5 py-1.5 text-[11px] font-extrabold text-surface"
-                              : "rounded-lg border border-ink/[0.16] px-2.5 py-1.5 text-[11px] font-semibold text-ink transition hover:border-primary hover:text-primary"
-                          }
-                        >
-                          {p.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                  <span className="rounded-full bg-tertiary px-[9px] py-[5px] text-[10.5px] font-bold text-surface">
+                    {method ? PAYMENT_METHOD_LABELS[method] : "Pay at counter"}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-xs font-semibold text-muted">Total Cost</span>
@@ -270,7 +249,7 @@ export function ManagerNewOrderScreen({ menu }: { menu: Menu }) {
                 <span className="text-center text-[10.5px] leading-[1.5] text-muted">
                   {method
                     ? `Recorded as paid — ${PAYMENT_METHOD_LABELS[method].toLowerCase()}.`
-                    : "Unpaid — settle at the counter from the orders list."}
+                    : "Unpaid — collect it later from Billing."}
                 </span>
               </div>
             </>

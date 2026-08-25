@@ -538,7 +538,12 @@ function HistoryOrderCard({
           {paymentLabel(order.payment_method, order.payment_status).toUpperCase()}
         </span>
         <div className="ml-auto">
-          <OrderActions order={order} onApplied={(patch) => onApplied(order.id, patch)} onError={onError} />
+          <OrderActions
+            order={order}
+            onApplied={(patch) => onApplied(order.id, patch)}
+            onError={onError}
+            showPaymentStatus={false}
+          />
         </div>
       </div>
     </div>
