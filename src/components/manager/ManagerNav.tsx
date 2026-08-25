@@ -7,6 +7,7 @@ import { usePendingApprovals } from "@/lib/use-pending-approvals";
 const LINKS = [
   { key: "new-order", href: "/manager/new-order", label: "New order" },
   { key: "orders", href: "/manager/orders", label: "Active orders" },
+  { key: "billing", href: "/manager/billing", label: "Billing" },
   { key: "history", href: "/manager/history", label: "History" },
 ] as const;
 

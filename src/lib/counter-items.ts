@@ -12,11 +12,15 @@
 // order showing its bottle line on the kitchen board, and money/history are
 // never affected because totals come from order_items regardless.
 import menu from "../data/menu.json" with { type: "json" };
-import type { Menu } from "../types/menu.ts";
+import type { Menu, MenuItem } from "../types/menu.ts";
 
-const COUNTER_ITEM_NAMES: ReadonlySet<string> = new Set(
-  (menu as Menu).categories.flatMap((c) => c.items.filter((i) => i.counterItem).map((i) => i.name)),
-);
+/** The counter items themselves — id, price, both names — for billing's
+ *  bottle stepper and the server action that adds one to an order. */
+export const COUNTER_ITEMS: MenuItem[] = (menu as Menu).categories
+  .flatMap((c) => c.items)
+  .filter((i) => i.counterItem);
+
+const COUNTER_ITEM_NAMES: ReadonlySet<string> = new Set(COUNTER_ITEMS.map((i) => i.name));
 
 /** True for a line the kitchen never has to make. */
 export function isCounterItemName(itemName: string): boolean {

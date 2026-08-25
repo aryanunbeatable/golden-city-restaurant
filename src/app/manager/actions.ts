@@ -12,7 +12,9 @@ import { getServiceSupabase } from "@/lib/supabase/server";
 import { sendOrderPush } from "@/lib/push";
 import { refundPayment } from "@/lib/razorpay";
 import { clockLabel, isValidPickupTime } from "@/lib/service-hours";
-import type { PaymentMethod } from "@/types/order";
+import { businessDayCutoffMs } from "@/lib/business-day";
+import { COUNTER_ITEMS } from "@/lib/counter-items";
+import { isTableSource, type OrderItemRow, type OrderSource, type PaymentMethod } from "@/types/order";
 
 export interface ActionResult {
   ok: boolean;
@@ -83,6 +85,106 @@ export async function settleOrderPayment(
     return { ok: false, error: "That order is already settled — reload the page." };
   }
   return { ok: true };
+}
+
+/**
+ * Settle a whole table at once — every unpaid order on it, one payment.
+ *
+ * The table is named, not the order ids. A server action is a public endpoint,
+ * so accepting a list of ids from the browser would mean trusting whatever it
+ * sent; deriving the set here means the worst a forged call can do is settle
+ * the table it names, which is the only thing this action is for anyway.
+ *
+ * Scoped to the current business day for the same reason the boards are: an
+ * order forgotten last week must not attach itself to tonight's table. Those
+ * stay settleable from History.
+ */
+export async function settleTableBill(
+  source: OrderSource,
+  method: PaymentMethod,
+): Promise<ActionResult & { settled?: number; total?: number }> {
+  if (!(await isManager())) return { ok: false, error: "Session expired — unlock the dashboard again." };
+  if (!SETTLEABLE.includes(method)) return { ok: false, error: "Unsupported payment method." };
+  if (!isTableSource(source)) return { ok: false, error: "That isn't a table." };
+
+  const cutoff = new Date(businessDayCutoffMs(Date.now())).toISOString();
+  const { data, error } = await getServiceSupabase()
+    .from("orders")
+    .update({ payment_method: method, payment_status: "paid" })
+    .eq("source", source)
+    .gte("created_at", cutoff)
+    // Same WHERE-clause guards as settleOrderPayment: only pending money is
+    // taken, and a voided or abandoned order is never charged for. Guarding
+    // here rather than with a read-then-write closes the race where a second
+    // terminal settles the same table in between.
+    .eq("payment_status", "pending")
+    .not("status", "in", "(cancelled,awaiting_payment)")
+    .select("id");
+
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) {
+    return { ok: false, error: "Nothing left to collect on that table — reload the page." };
+  }
+  return { ok: true, settled: data.length };
+}
+
+/**
+ * Add a counter item (water bottles) to an unpaid order at billing time.
+ *
+ * Price comes from menu.json, never from the browser — the same rule
+ * priceCart() follows, and for the same reason: a hand-crafted request must
+ * not be able to bill a bottle at ₹0 or ₹0.01. The item must additionally be
+ * flagged `counterItem`, so this endpoint can only ever add bottles, never
+ * quietly append a biryani to somebody's bill.
+ */
+export async function addCounterItem(
+  orderId: string,
+  itemId: string,
+  qty: number,
+): Promise<ActionResult & { item?: OrderItemRow }> {
+  if (!(await isManager())) return { ok: false, error: "Session expired — unlock the dashboard again." };
+  if (!Number.isInteger(qty) || qty < 1 || qty > 20) return { ok: false, error: "Pick between 1 and 20." };
+
+  const item = COUNTER_ITEMS.find((i) => i.id === itemId);
+  if (!item) return { ok: false, error: "That isn't a counter item." };
+  if (typeof item.price !== "number") return { ok: false, error: "That item has no price." };
+
+  const supabase = getServiceSupabase();
+  // Only an unpaid, live order may grow. Adding to a settled bill would
+  // create money owed against an order already recorded as paid, which
+  // nothing downstream would ever surface again.
+  const { data: target, error: readError } = await supabase
+    .from("orders")
+    .select("id")
+    .eq("id", orderId)
+    .eq("payment_status", "pending")
+    .not("status", "in", "(cancelled,awaiting_payment)")
+    .maybeSingle();
+
+  if (readError) return { ok: false, error: readError.message };
+  if (!target) return { ok: false, error: "That order is already settled — reload the page." };
+
+  // The inserted row is returned so the caller can patch its local order
+  // state directly — nothing here subscribes to order_items over realtime,
+  // only to the orders table, so without this the bottle would go on the
+  // bill in the database but not visibly on screen until a reload.
+  const { data: inserted, error } = await supabase
+    .from("order_items")
+    .insert({
+      order_id: orderId,
+      item_name: item.name,
+      item_name_hi: item.nameHi,
+      variant_name: null,
+      variant_name_hi: null,
+      quantity: qty,
+      unit_price: item.price,
+      is_veg: item.veg ?? true,
+    })
+    .select()
+    .single();
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, item: inserted as OrderItemRow };
 }
 
 /** Void an order. Kept, never deleted, and excluded from every total. */
