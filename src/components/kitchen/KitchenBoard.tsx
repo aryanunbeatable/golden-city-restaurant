@@ -33,6 +33,10 @@ function orderLineLabel(it: OrderItemRow, hi: boolean): string {
   return variant ? `${name} (${variant})` : name;
 }
 
+const RING_LOOP_MS = 4000; // how long the mp3 loops for each time it rings
+const RING_REPEAT_MS = 20_000; // re-ring cadence while an order sits unconfirmed
+const SNOOZE_MS = 2 * 60_000;
+
 function clock(ms: number): string {
   const s = Math.max(0, Math.round(ms / 1000));
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
@@ -124,20 +128,38 @@ export function KitchenBoard() {
     window.addEventListener("pointerdown", unlock, { once: true });
     return () => window.removeEventListener("pointerdown", unlock);
   }, []);
+  // Ref for the imperative check inside ring() (an event/interval callback,
+  // not render); state in parallel purely so the Snooze button can display
+  // the countdown — reading a ref during render isn't allowed.
+  const snoozedUntilRef = useRef(0);
+  const [snoozedUntil, setSnoozedUntil] = useState(0);
   function ring() {
-    if (!audioUnlocked.current) return;
-    const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    osc.frequency.value = 880;
-    osc.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.15);
+    if (!audioUnlocked.current || Date.now() < snoozedUntilRef.current) return;
+    const audio = new Audio("/kitchen_ring.mp3");
+    audio.loop = true;
+    audio.play().catch(() => {});
+    setTimeout(() => {
+      audio.pause();
+      audio.currentTime = 0;
+    }, RING_LOOP_MS);
+  }
+  function snooze() {
+    const until = Date.now() + SNOOZE_MS;
+    snoozedUntilRef.current = until;
+    setSnoozedUntil(until);
   }
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  const hasUnconfirmed = (orders ?? []).some((o) => o.status === "waiting_confirmation");
+  useEffect(() => {
+    if (!hasUnconfirmed) return;
+    const id = setInterval(ring, RING_REPEAT_MS);
+    return () => clearInterval(id);
+  }, [hasUnconfirmed]);
 
   useEffect(() => {
     let cancelled = false;
@@ -257,6 +279,20 @@ export function KitchenBoard() {
         <span className="text-[11.5px] font-semibold text-surface/75">
           {counts.new} new · {counts.cooking} cooking · {counts.ready} at the pass
         </span>
+        {hasUnconfirmed ? (
+          now < snoozedUntil ? (
+            <span className="text-[11px] font-semibold text-surface/50">
+              Snoozed {clock(snoozedUntil - now)}
+            </span>
+          ) : (
+            <button
+              onClick={snooze}
+              className="text-[11px] font-semibold text-surface/75 transition hover:text-surface hover:underline"
+            >
+              Snooze
+            </button>
+          )
+        ) : null}
         <button
           onClick={signOut}
           disabled={signingOut}
