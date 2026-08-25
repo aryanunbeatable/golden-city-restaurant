@@ -117,6 +117,17 @@ export function KitchenBoard() {
   const [now, setNow] = useState(() => Date.now());
   const [signingOut, startSignOutTransition] = useTransition();
 
+  // One Audio element, reused for every ring. iOS ties its playback unlock to
+  // the specific element played during the gesture — a fresh `new Audio()`
+  // per ring can come back silent on iPhone even after a real tap, so the
+  // element created here is the same one primed in the tap handler below.
+  const ringAudio = useRef<HTMLAudioElement | null>(null);
+  useEffect(() => {
+    const audio = new Audio("/kitchen_ring.mp3");
+    audio.loop = true;
+    ringAudio.current = audio;
+  }, []);
+
   // Audio is blocked until a user gesture happens on this document (the PIN
   // redirect into /kitchen/board doesn't count) — arm it on the first tap
   // anywhere on the board, ring() no-ops until then.
@@ -124,6 +135,13 @@ export function KitchenBoard() {
   useEffect(() => {
     const unlock = () => {
       audioUnlocked.current = true;
+      const audio = ringAudio.current;
+      if (!audio) return;
+      audio
+        .play()
+        .then(() => audio.pause())
+        .catch(() => {});
+      audio.currentTime = 0;
     };
     window.addEventListener("pointerdown", unlock, { once: true });
     return () => window.removeEventListener("pointerdown", unlock);
@@ -134,9 +152,9 @@ export function KitchenBoard() {
   const snoozedUntilRef = useRef(0);
   const [snoozedUntil, setSnoozedUntil] = useState(0);
   function ring() {
-    if (!audioUnlocked.current || Date.now() < snoozedUntilRef.current) return;
-    const audio = new Audio("/kitchen_ring.mp3");
-    audio.loop = true;
+    const audio = ringAudio.current;
+    if (!audio || !audioUnlocked.current || Date.now() < snoozedUntilRef.current) return;
+    audio.currentTime = 0;
     audio.play().catch(() => {});
     setTimeout(() => {
       audio.pause();
