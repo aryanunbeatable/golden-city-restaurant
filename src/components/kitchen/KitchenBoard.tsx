@@ -33,6 +33,7 @@ function orderLineLabel(it: OrderItemRow, hi: boolean): string {
   return variant ? `${name} (${variant})` : name;
 }
 
+const LANG_KEY = "kitchen-lang";
 const RING_LOOP_MS = 4000; // how long the mp3 loops for each time it rings
 const RING_REPEAT_MS = 20_000; // re-ring cadence while an order sits unconfirmed
 const SNOOZE_MS = 2 * 60_000;
@@ -115,6 +116,26 @@ export function KitchenBoard() {
   const [error, setError] = useState<string | null>(null);
   const [lang, setLang] = useState<Lang>("en");
   const [now, setNow] = useState(() => Date.now());
+
+  // Deferred past the effect body: localStorage can't be read during SSR
+  // (would desync hydration), and setting state synchronously inside an
+  // effect is the cascading-render pattern React warns about. Same pattern
+  // as PhoneOrderFlow's contact prefill.
+  useEffect(() => {
+    let cancelled = false;
+    Promise.resolve().then(() => {
+      if (cancelled) return;
+      const saved = localStorage.getItem(LANG_KEY);
+      if (saved === "en" || saved === "hi") setLang(saved);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  function changeLang(l: Lang) {
+    setLang(l);
+    localStorage.setItem(LANG_KEY, l);
+  }
   const [signingOut, startSignOutTransition] = useTransition();
 
   // One Audio element, reused for every ring. iOS ties its playback unlock to
@@ -282,7 +303,7 @@ export function KitchenBoard() {
           {(["en", "hi"] as const).map((l) => (
             <button
               key={l}
-              onClick={() => setLang(l)}
+              onClick={() => changeLang(l)}
               className={
                 l === lang
                   ? "font-devanagari rounded-[6px] bg-surface px-[11px] py-1.5 text-[11px] font-extrabold text-tertiary"
