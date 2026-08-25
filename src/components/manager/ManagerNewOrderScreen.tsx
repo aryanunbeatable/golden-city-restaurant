@@ -79,16 +79,21 @@ export function ManagerNewOrderScreen({ menu }: { menu: Menu }) {
 
       <div className="flex min-h-0 flex-1">
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex flex-none flex-wrap items-center gap-2.5 border-b border-ink/10 px-4 py-3.5 md:px-[18px]">
-            <span className="mr-1 text-[10.5px] font-bold tracking-[.14em] text-muted">ORDER SOURCE</span>
+          {/* One scrolling strip on a phone — wrapping these 7 pills cost three
+              lines and a fifth of the screen. Reverts to wrapping from md up,
+              where there's room. Temporary either way: this becomes a tab. */}
+          <div className="flex flex-none items-center gap-2.5 overflow-x-auto border-b border-ink/10 px-4 py-3.5 md:flex-wrap md:overflow-x-visible md:px-[18px]">
+            <span className="mr-1 flex-none text-[10.5px] font-bold tracking-[.14em] text-muted">
+              ORDER SOURCE
+            </span>
             {COUNTER_SOURCE_OPTIONS.map((s) => (
               <button
                 key={s.value}
                 onClick={() => setSource(s.value)}
                 className={
                   s.value === source
-                    ? "rounded-[9px] bg-primary px-[15px] py-2.5 text-[12.5px] font-extrabold text-surface shadow-[0_4px_12px_rgba(139,29,14,0.28)]"
-                    : "rounded-[9px] border border-ink/[0.16] bg-surface px-[15px] py-2.5 text-[12.5px] font-semibold text-ink transition hover:border-primary hover:text-primary"
+                    ? "flex-none rounded-[9px] bg-primary px-[15px] py-2.5 text-[12.5px] font-extrabold text-surface shadow-[0_4px_12px_rgba(139,29,14,0.28)]"
+                    : "flex-none rounded-[9px] border border-ink/[0.16] bg-surface px-[15px] py-2.5 text-[12.5px] font-semibold text-ink transition hover:border-primary hover:text-primary"
                 }
               >
                 {s.label}
