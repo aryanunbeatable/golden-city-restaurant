@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabase } from "@/lib/supabase/client";
 import { untilLabel } from "@/lib/order-clock";
@@ -113,6 +113,27 @@ export function KitchenBoard() {
   const [now, setNow] = useState(() => Date.now());
   const [signingOut, startSignOutTransition] = useTransition();
 
+  // Audio is blocked until a user gesture happens on this document (the PIN
+  // redirect into /kitchen/board doesn't count) — arm it on the first tap
+  // anywhere on the board, ring() no-ops until then.
+  const audioUnlocked = useRef(false);
+  useEffect(() => {
+    const unlock = () => {
+      audioUnlocked.current = true;
+    };
+    window.addEventListener("pointerdown", unlock, { once: true });
+    return () => window.removeEventListener("pointerdown", unlock);
+  }, []);
+  function ring() {
+    if (!audioUnlocked.current) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    osc.frequency.value = 880;
+    osc.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.15);
+  }
+
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
@@ -157,6 +178,7 @@ export function KitchenBoard() {
     const channel = supabase
       .channel("kitchen:board")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "orders" }, (payload) => {
+        ring();
         const row = payload.new as OrderRow;
         supabase
           .from("order_items")
