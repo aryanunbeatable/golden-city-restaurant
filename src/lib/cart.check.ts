@@ -75,4 +75,36 @@ assert.equal(line.nameHi, "नूडल्स");
 assert.equal(line.variantNameHi, "चिकन");
 assert.equal(lineLabel(line), "Noodles (Chicken)", "lineLabel combines them for single-string display");
 
+// A counter item (water bottle) must never move the prep estimate. Because
+// prep is a MEAN, a 0-minute line would otherwise halve it — a biryani order
+// with a bottle would tell the kitchen 13 minutes instead of 25.
+const biryani: MenuItem = {
+  id: "biryani",
+  name: "Biryani",
+  description: "",
+  price: 300,
+  veg: false,
+  prepTimeMinutes: 25,
+  photo: "placeholder",
+  nameHi: "बिरयानी",
+};
+const bottle: MenuItem = {
+  id: "water-bottle-500ml",
+  name: "Water Bottle (500ml)",
+  description: "",
+  price: 10,
+  veg: true,
+  prepTimeMinutes: 0,
+  photo: "placeholder",
+  nameHi: "पानी की बोतल (500ml)",
+  counterItem: true,
+};
+const withBottle = cartTotals([lineFromItem(biryani, null, 1), lineFromItem(bottle, null, 2)]);
+assert.equal(withBottle.prepMinutes, 25, "a water bottle must not drag the prep mean down");
+assert.equal(withBottle.cost, 300 + 20, "but it must still be charged for");
+assert.equal(withBottle.count, 3, "and still counted in the item count");
+
+// All-bottles order: nothing is cooked, so there is no prep time.
+assert.equal(cartTotals([lineFromItem(bottle, null, 1)]).prepMinutes, 0, "bottles alone cook in 0 min");
+
 console.log("cart.check.ts: all assertions passed");

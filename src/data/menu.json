@@ -179,6 +179,28 @@
           "prepTimeMinutes": 6,
           "photo": "placeholder",
           "nameHi": "चॉकलेट शेक"
+        },
+        {
+          "id": "water-bottle-500ml",
+          "name": "Water Bottle (500ml)",
+          "description": "",
+          "price": 10,
+          "veg": true,
+          "prepTimeMinutes": 0,
+          "photo": "placeholder",
+          "nameHi": "पानी की बोतल (500ml)",
+          "counterItem": true
+        },
+        {
+          "id": "water-bottle-1l",
+          "name": "Water Bottle (1L)",
+          "description": "",
+          "price": 20,
+          "veg": true,
+          "prepTimeMinutes": 0,
+          "photo": "placeholder",
+          "nameHi": "पानी की बोतल (1L)",
+          "counterItem": true
         }
       ]
     },

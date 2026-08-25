@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabase } from "@/lib/supabase/client";
 import { untilLabel } from "@/lib/order-clock";
 
 import { since } from "@/lib/orders";
+import { kitchenLines } from "@/lib/counter-items";
 import { businessDayCutoffMs, msUntilNextBusinessDay } from "@/lib/business-day";
 import { clockLabel } from "@/lib/service-hours";
 import { markOrderReady, signOutKitchen } from "@/app/kitchen/actions";
@@ -193,7 +194,15 @@ export function KitchenBoard() {
     return () => clearInterval(id);
   }, []);
 
-  const hasUnconfirmed = (orders ?? []).some((o) => o.status === "waiting_confirmation");
+  // Everything the kitchen actually has work on. An order of nothing but
+  // water bottles is invisible here — so it must not be counted in the
+  // header, and must not ring the bell either: a card that isn't drawn
+  // cannot be cleared, and the alarm would repeat every 20s forever.
+  const kitchenOrders = useMemo(
+    () => (orders ?? []).filter((o) => kitchenLines(o.order_items).length > 0),
+    [orders],
+  );
+  const hasUnconfirmed = kitchenOrders.some((o) => o.status === "waiting_confirmation");
   useEffect(() => {
     if (!hasUnconfirmed) return;
     const id = setInterval(ring, RING_REPEAT_MS);
@@ -287,9 +296,9 @@ export function KitchenBoard() {
   }
 
   const counts = {
-    new: (orders ?? []).filter((o) => o.status === "waiting_confirmation").length,
-    cooking: (orders ?? []).filter((o) => o.status === "confirmed" || o.status === "preparing").length,
-    ready: (orders ?? []).filter((o) => o.status === "ready").length,
+    new: kitchenOrders.filter((o) => o.status === "waiting_confirmation").length,
+    cooking: kitchenOrders.filter((o) => o.status === "confirmed" || o.status === "preparing").length,
+    ready: kitchenOrders.filter((o) => o.status === "ready").length,
   };
 
   return (
@@ -352,7 +361,7 @@ export function KitchenBoard() {
         // independently-scrolling columns once there's width for them.
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-px overflow-y-auto bg-ink/[0.12] md:grid-cols-2 md:overflow-hidden xl:grid-cols-4">
           {COLUMNS.map((col) => {
-            const colOrders = orders
+            const colOrders = kitchenOrders
               .filter((o) => {
                 if (!col.statuses.includes(o.status)) return false;
                 // A phone order still waiting on the counter's approval must
@@ -479,7 +488,7 @@ function OrderCard({
       )}
 
       <div className="flex flex-col gap-2 border-t border-dashed border-ink/[0.14] pt-2.5">
-        {order.order_items.map((it) => (
+        {kitchenLines(order.order_items).map((it) => (
           <div key={it.id} className="flex items-center gap-2">
             <span className="min-w-6 text-base font-extrabold text-primary">{it.quantity}×</span>
             <VegDot veg={it.is_veg} size={13} />

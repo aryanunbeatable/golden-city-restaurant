@@ -34,6 +34,17 @@ const menu: Menu = {
           photo: "placeholder",
           nameHi: "मंचाउ सूप",
         },
+        {
+          id: "water-bottle-500ml",
+          name: "Water Bottle (500ml)",
+          description: "",
+          price: 10,
+          veg: true,
+          prepTimeMinutes: 0,
+          photo: "placeholder",
+          nameHi: "पानी की बोतल (500ml)",
+          counterItem: true,
+        },
       ],
     },
   ],
@@ -136,5 +147,27 @@ assert.match(
   err(priceCart(menu, Array.from({ length: 41 }, () => ({ itemId: "veg-soup", variantName: null, qty: 1 })))),
   /too many/i,
 );
+
+// Counter items are charged but never costed into prep time. This is the
+// server-side number the kitchen actually works to, so it matters more than
+// the cart's display copy — a bottle must not make a 12-minute soup look
+// like a 6-minute one.
+cart = ok(
+  priceCart(menu, [
+    { itemId: "manchow", variantName: "Veg", qty: 1 },
+    { itemId: "water-bottle-500ml", variantName: null, qty: 2 },
+  ]),
+);
+assert.equal(cart.total, 139 + 20, "bottles are charged");
+assert.equal(cart.prepMinutes, 12, "bottles do not drag the prep mean down");
+assert.equal(cart.prepMinutesMax, 12, "nor the slowest-dish figure scheduling uses");
+assert.equal(cart.lines.length, 2, "and still reach the kitchen/bill as real lines");
+
+// An all-bottles order cooks in no time — and must not produce -Infinity from
+// Math.max() over an empty list.
+cart = ok(priceCart(menu, [{ itemId: "water-bottle-500ml", variantName: null, qty: 1 }]));
+assert.equal(cart.prepMinutes, 0);
+assert.equal(cart.prepMinutesMax, 0, "not -Infinity");
+assert.equal(cart.total, 10);
 
 console.log("order-pricing.check.ts: all assertions passed");

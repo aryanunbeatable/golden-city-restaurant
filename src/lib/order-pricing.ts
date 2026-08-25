@@ -99,11 +99,15 @@ export function priceCart(menu: Menu, requested: RequestedLine[]): { cart: Price
   const total = lines.reduce((sum, l) => sum + l.unit_price * l.quantity, 0);
   if (total <= 0) return { error: "That order comes to nothing." };
 
-  const preps = requested.map((r) => findItem(menu, r.itemId)?.prepTimeMinutes ?? 0);
-  // Mean prep across distinct lines, matching cartTotals() so the customer's
-  // estimate and the kitchen's agree.
-  const prepMinutes = Math.round(preps.reduce((sum, p) => sum + p, 0) / preps.length);
-  const prepMinutesMax = Math.max(...preps);
+  // Counter items (water bottles) are dropped before any prep maths: they are
+  // sold, not made. Because prepMinutes is a MEAN, including a 0-minute bottle
+  // would halve the estimate on a real order — see cartTotals(), which
+  // excludes them the same way so the two agree.
+  const cooked = requested.map((r) => findItem(menu, r.itemId)).filter((i) => i && !i.counterItem);
+  const preps = cooked.map((i) => i!.prepTimeMinutes);
+  // An all-bottles order has nothing to cook and so no prep time at all.
+  const prepMinutes = preps.length ? Math.round(preps.reduce((sum, p) => sum + p, 0) / preps.length) : 0;
+  const prepMinutesMax = preps.length ? Math.max(...preps) : 0;
 
   return {
     cart: {

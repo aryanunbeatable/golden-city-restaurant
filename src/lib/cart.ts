@@ -16,6 +16,8 @@ export interface CartLine {
   veg: boolean;
   prepTimeMinutes: number;
   qty: number;
+  /** Sold, not cooked — see MenuItem.counterItem. */
+  counterItem: boolean;
 }
 
 export function lineKey(itemId: string, variantName?: string | null): string {
@@ -37,6 +39,7 @@ export function lineFromItem(item: MenuItem, variant: MenuVariant | null, qty: n
     veg: variant ? variant.veg : !!item.veg,
     prepTimeMinutes: item.prepTimeMinutes,
     qty,
+    counterItem: !!item.counterItem,
   };
 }
 
@@ -70,8 +73,14 @@ export function cartTotals(lines: CartLine[]) {
   // Mean of line prep times, matching the design exactly for this running
   // cart display. NOTE: mean understates the real wait for mixed orders —
   // flagged as worth switching to max() when order placement is wired up.
-  const prepMinutes = lines.length
-    ? Math.round(lines.reduce((a, l) => a + l.prepTimeMinutes, 0) / lines.length)
+  //
+  // Counter items are excluded first: they take no time to "make", and
+  // because this is a mean, leaving a 0-minute water bottle in would pull a
+  // 25-minute biryani order down to 13 — under-promising the kitchen on
+  // every order that happens to include a drink.
+  const cooked = lines.filter((l) => !l.counterItem);
+  const prepMinutes = cooked.length
+    ? Math.round(cooked.reduce((a, l) => a + l.prepTimeMinutes, 0) / cooked.length)
     : 0;
   const count = lines.reduce((a, l) => a + l.qty, 0);
   return { cost, prepMinutes, count };

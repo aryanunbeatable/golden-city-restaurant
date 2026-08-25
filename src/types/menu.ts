@@ -17,6 +17,15 @@ export interface MenuItem {
   prepTimeMinutes: number;
   photo: string;
   nameHi: string;
+  /**
+   * Sold at the counter, not cooked — water bottles today. Two consequences,
+   * and they must travel together:
+   *   1. never shown on the kitchen board (nothing to make), and
+   *   2. never counted in prep time. Prep is a MEAN across lines, so a
+   *      0-minute bottle would drag a 25-minute biryani order down to 13 and
+   *      the kitchen countdown with it.
+   */
+  counterItem?: boolean;
 }
 
 export interface MenuCategory {
