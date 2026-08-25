@@ -13,8 +13,13 @@ import { sendOrderPush } from "@/lib/push";
 import { refundPayment } from "@/lib/razorpay";
 import { clockLabel, isValidPickupTime } from "@/lib/service-hours";
 import { businessDayCutoffMs } from "@/lib/business-day";
-import { COUNTER_ITEMS } from "@/lib/counter-items";
-import { isTableSource, type OrderItemRow, type OrderSource, type PaymentMethod } from "@/types/order";
+import { COUNTER_ITEMS, isCounterItemName } from "@/lib/counter-items";
+import {
+  isTableSource,
+  type OrderItemRow,
+  type OrderSource,
+  type PaymentMethod,
+} from "@/types/order";
 
 export interface ActionResult {
   ok: boolean;
@@ -65,8 +70,13 @@ export async function settleOrderPayment(
   orderId: string,
   method: PaymentMethod,
 ): Promise<ActionResult> {
-  if (!(await isManager())) return { ok: false, error: "Session expired — unlock the dashboard again." };
-  if (!SETTLEABLE.includes(method)) return { ok: false, error: "Unsupported payment method." };
+  if (!(await isManager()))
+    return {
+      ok: false,
+      error: "Session expired — unlock the dashboard again.",
+    };
+  if (!SETTLEABLE.includes(method))
+    return { ok: false, error: "Unsupported payment method." };
 
   // Only an unpaid order can be settled. Guarding in the WHERE clause rather
   // than with a read-then-write closes the race, and stops a stale page from
@@ -82,7 +92,10 @@ export async function settleOrderPayment(
 
   if (error) return { ok: false, error: error.message };
   if (!data || data.length === 0) {
-    return { ok: false, error: "That order is already settled — reload the page." };
+    return {
+      ok: false,
+      error: "That order is already settled — reload the page.",
+    };
   }
   return { ok: true };
 }
@@ -103,9 +116,15 @@ export async function settleTableBill(
   source: OrderSource,
   method: PaymentMethod,
 ): Promise<ActionResult & { settled?: number; total?: number }> {
-  if (!(await isManager())) return { ok: false, error: "Session expired — unlock the dashboard again." };
-  if (!SETTLEABLE.includes(method)) return { ok: false, error: "Unsupported payment method." };
-  if (!isTableSource(source)) return { ok: false, error: "That isn't a table." };
+  if (!(await isManager()))
+    return {
+      ok: false,
+      error: "Session expired — unlock the dashboard again.",
+    };
+  if (!SETTLEABLE.includes(method))
+    return { ok: false, error: "Unsupported payment method." };
+  if (!isTableSource(source))
+    return { ok: false, error: "That isn't a table." };
 
   const cutoff = new Date(businessDayCutoffMs(Date.now())).toISOString();
   const { data, error } = await getServiceSupabase()
@@ -123,7 +142,10 @@ export async function settleTableBill(
 
   if (error) return { ok: false, error: error.message };
   if (!data || data.length === 0) {
-    return { ok: false, error: "Nothing left to collect on that table — reload the page." };
+    return {
+      ok: false,
+      error: "Nothing left to collect on that table — reload the page.",
+    };
   }
   return { ok: true, settled: data.length };
 }
@@ -142,12 +164,18 @@ export async function addCounterItem(
   itemId: string,
   qty: number,
 ): Promise<ActionResult & { item?: OrderItemRow }> {
-  if (!(await isManager())) return { ok: false, error: "Session expired — unlock the dashboard again." };
-  if (!Number.isInteger(qty) || qty < 1 || qty > 20) return { ok: false, error: "Pick between 1 and 20." };
+  if (!(await isManager()))
+    return {
+      ok: false,
+      error: "Session expired — unlock the dashboard again.",
+    };
+  if (!Number.isInteger(qty) || qty < 1 || qty > 20)
+    return { ok: false, error: "Pick between 1 and 20." };
 
   const item = COUNTER_ITEMS.find((i) => i.id === itemId);
   if (!item) return { ok: false, error: "That isn't a counter item." };
-  if (typeof item.price !== "number") return { ok: false, error: "That item has no price." };
+  if (typeof item.price !== "number")
+    return { ok: false, error: "That item has no price." };
 
   const supabase = getServiceSupabase();
   // Only an unpaid, live order may grow. Adding to a settled bill would
@@ -162,7 +190,11 @@ export async function addCounterItem(
     .maybeSingle();
 
   if (readError) return { ok: false, error: readError.message };
-  if (!target) return { ok: false, error: "That order is already settled — reload the page." };
+  if (!target)
+    return {
+      ok: false,
+      error: "That order is already settled — reload the page.",
+    };
 
   // The inserted row is returned so the caller can patch its local order
   // state directly — nothing here subscribes to order_items over realtime,
@@ -187,9 +219,68 @@ export async function addCounterItem(
   return { ok: true, item: inserted as OrderItemRow };
 }
 
+/**
+ * Undo one addCounterItem() call — deletes the whole order_items row.
+ *
+ * Each "Add" click creates its own row rather than merging into an existing
+ * one, so a row here is exactly one prior Add, and removing it is exactly
+ * undoing that Add — no partial-quantity math to get wrong. Scoped to
+ * counter items only, the same as addCounterItem: this must never become a
+ * way to delete a dish line the kitchen may already be cooking.
+ */
+export async function removeCounterItem(
+  orderId: string,
+  itemRowId: string,
+): Promise<ActionResult> {
+  if (!(await isManager()))
+    return {
+      ok: false,
+      error: "Session expired — unlock the dashboard again.",
+    };
+
+  const supabase = getServiceSupabase();
+  // Same guard as addCounterItem: only an unpaid, live order may be edited.
+  const { data: target, error: readError } = await supabase
+    .from("orders")
+    .select("id")
+    .eq("id", orderId)
+    .eq("payment_status", "pending")
+    .not("status", "in", "(cancelled,awaiting_payment)")
+    .maybeSingle();
+
+  if (readError) return { ok: false, error: readError.message };
+  if (!target)
+    return {
+      ok: false,
+      error: "That order is already settled — reload the page.",
+    };
+
+  const { data: row, error: rowError } = await supabase
+    .from("order_items")
+    .select("id, item_name")
+    .eq("id", itemRowId)
+    .eq("order_id", orderId)
+    .maybeSingle();
+
+  if (rowError) return { ok: false, error: rowError.message };
+  if (!row || !isCounterItemName(row.item_name))
+    return { ok: false, error: "That isn't a counter item." };
+
+  const { error } = await supabase
+    .from("order_items")
+    .delete()
+    .eq("id", itemRowId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
 /** Void an order. Kept, never deleted, and excluded from every total. */
 export async function voidOrder(orderId: string): Promise<ActionResult> {
-  if (!(await isManager())) return { ok: false, error: "Session expired — unlock the dashboard again." };
+  if (!(await isManager()))
+    return {
+      ok: false,
+      error: "Session expired — unlock the dashboard again.",
+    };
 
   const { data, error } = await getServiceSupabase()
     .from("orders")
@@ -199,7 +290,8 @@ export async function voidOrder(orderId: string): Promise<ActionResult> {
 
   if (error) return { ok: false, error: error.message };
   // A silent no-op would have the UI cheerfully show the order as voided.
-  if (!data || data.length === 0) return { ok: false, error: "That order no longer exists." };
+  if (!data || data.length === 0)
+    return { ok: false, error: "That order no longer exists." };
   return { ok: true };
 }
 
@@ -210,7 +302,9 @@ export async function voidOrder(orderId: string): Promise<ActionResult> {
  * the browser's anon key cannot read them (migration 0009). The approval queue
  * fetches them through here instead, behind the manager session.
  */
-export async function getOrderPhones(orderIds: string[]): Promise<Record<string, string>> {
+export async function getOrderPhones(
+  orderIds: string[],
+): Promise<Record<string, string>> {
   if (!(await isManager()) || orderIds.length === 0) return {};
 
   const { data, error } = await getServiceSupabase()
@@ -219,7 +313,12 @@ export async function getOrderPhones(orderIds: string[]): Promise<Record<string,
     .in("order_id", orderIds);
 
   if (error || !data) return {};
-  return Object.fromEntries((data as { order_id: string; phone: string }[]).map((r) => [r.order_id, r.phone]));
+  return Object.fromEntries(
+    (data as { order_id: string; phone: string }[]).map((r) => [
+      r.order_id,
+      r.phone,
+    ]),
+  );
 }
 
 /**
@@ -227,8 +326,15 @@ export async function getOrderPhones(orderIds: string[]): Promise<Record<string,
  * counter push the promised time out when the kitchen is slammed; it is
  * re-validated here because the client could post anything.
  */
-export async function approvePhoneOrder(orderId: string, readyBy?: number): Promise<ActionResult> {
-  if (!(await isManager())) return { ok: false, error: "Session expired — unlock the dashboard again." };
+export async function approvePhoneOrder(
+  orderId: string,
+  readyBy?: number,
+): Promise<ActionResult> {
+  if (!(await isManager()))
+    return {
+      ok: false,
+      error: "Session expired — unlock the dashboard again.",
+    };
 
   const patch: Record<string, unknown> = { status: "confirmed" };
   if (readyBy !== undefined) {
@@ -249,7 +355,11 @@ export async function approvePhoneOrder(orderId: string, readyBy?: number): Prom
     .select("id");
 
   if (error) return { ok: false, error: error.message };
-  if (!data || data.length === 0) return { ok: false, error: "That order isn't waiting for approval any more." };
+  if (!data || data.length === 0)
+    return {
+      ok: false,
+      error: "That order isn't waiting for approval any more.",
+    };
   return { ok: true };
 }
 
@@ -261,7 +371,11 @@ export async function approvePhoneOrder(orderId: string, readyBy?: number): Prom
  * a customer out of pocket with nobody aware.
  */
 export async function rejectPhoneOrder(orderId: string): Promise<ActionResult> {
-  if (!(await isManager())) return { ok: false, error: "Session expired — unlock the dashboard again." };
+  if (!(await isManager()))
+    return {
+      ok: false,
+      error: "Session expired — unlock the dashboard again.",
+    };
 
   const supabase = getServiceSupabase();
   const { data: order, error: readError } = await supabase
@@ -270,7 +384,8 @@ export async function rejectPhoneOrder(orderId: string): Promise<ActionResult> {
     .eq("id", orderId)
     .single();
 
-  if (readError || !order) return { ok: false, error: "We couldn't find that order." };
+  if (readError || !order)
+    return { ok: false, error: "We couldn't find that order." };
 
   const { error: cancelError } = await supabase
     .from("orders")
@@ -279,7 +394,8 @@ export async function rejectPhoneOrder(orderId: string): Promise<ActionResult> {
   if (cancelError) return { ok: false, error: cancelError.message };
 
   const reference = order.payment_reference as string | null;
-  const refundDue = order.payment_status === "paid" && !!reference && !order.refunded_at;
+  const refundDue =
+    order.payment_status === "paid" && !!reference && !order.refunded_at;
 
   // Cancelled for certain by this point, and told even if the refund below
   // fails — the thing the customer must not do is turn up for food that isn't
@@ -294,9 +410,9 @@ export async function rejectPhoneOrder(orderId: string): Promise<ActionResult> {
         : order.refunded_at
           ? "Sorry — we couldn't take this one. Your refund is already on its way."
           : order.payment_status === "paid"
-            // Charged, but with no reference we cannot refund automatically.
-            // Never tell someone who paid that they weren't charged.
-            ? "Sorry — we couldn't take this one. We'll sort your refund out and call you."
+            ? // Charged, but with no reference we cannot refund automatically.
+              // Never tell someone who paid that they weren't charged.
+              "Sorry — we couldn't take this one. We'll sort your refund out and call you."
             : "Sorry — we couldn't take this one. You haven't been charged.",
     });
   });
@@ -307,7 +423,10 @@ export async function rejectPhoneOrder(orderId: string): Promise<ActionResult> {
 
   try {
     await refundPayment(reference);
-    await supabase.from("orders").update({ refunded_at: new Date().toISOString() }).eq("id", orderId);
+    await supabase
+      .from("orders")
+      .update({ refunded_at: new Date().toISOString() })
+      .eq("id", orderId);
     return { ok: true };
   } catch (e) {
     const why = e instanceof Error ? e.message : String(e);
@@ -326,9 +445,20 @@ export async function rejectPhoneOrder(orderId: string): Promise<ActionResult> {
  * pass working to a time nobody is cooking to any more. The customer's two
  * countdowns re-derive from it for free.
  */
-export async function delayOrder(orderId: string, extraMinutes: number): Promise<ActionResult> {
-  if (!(await isManager())) return { ok: false, error: "Session expired — unlock the dashboard again." };
-  if (!Number.isInteger(extraMinutes) || extraMinutes < 5 || extraMinutes > 60) {
+export async function delayOrder(
+  orderId: string,
+  extraMinutes: number,
+): Promise<ActionResult> {
+  if (!(await isManager()))
+    return {
+      ok: false,
+      error: "Session expired — unlock the dashboard again.",
+    };
+  if (
+    !Number.isInteger(extraMinutes) ||
+    extraMinutes < 5 ||
+    extraMinutes > 60
+  ) {
     return { ok: false, error: "Pick a delay between 5 and 60 minutes." };
   }
 
@@ -339,9 +469,12 @@ export async function delayOrder(orderId: string, extraMinutes: number): Promise
     .eq("id", orderId)
     .single();
 
-  if (readError || !order?.scheduled_for) return { ok: false, error: "That order has no scheduled time." };
+  if (readError || !order?.scheduled_for)
+    return { ok: false, error: "That order has no scheduled time." };
 
-  const moved = new Date(new Date(order.scheduled_for).getTime() + extraMinutes * 60_000);
+  const moved = new Date(
+    new Date(order.scheduled_for).getTime() + extraMinutes * 60_000,
+  );
   const { data: updated, error } = await supabase
     .from("orders")
     // Clearing the nudge lets the sweep fire again against the new time —
@@ -360,7 +493,11 @@ export async function delayOrder(orderId: string, extraMinutes: number): Promise
     .maybeSingle();
 
   if (error) return { ok: false, error: error.message };
-  if (!updated) return { ok: false, error: "That order isn't running — refresh the board." };
+  if (!updated)
+    return {
+      ok: false,
+      error: "That order isn't running — refresh the board.",
+    };
 
   after(async () => {
     await sendOrderPush(orderId, {

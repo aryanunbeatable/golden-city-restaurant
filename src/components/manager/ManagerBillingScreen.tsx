@@ -4,8 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { getSupabase } from "@/lib/supabase/client";
 import { since } from "@/lib/orders";
 import { money } from "@/lib/cart";
-import { businessDayCutoffMs, msUntilNextBusinessDay } from "@/lib/business-day";
-import { COUNTER_ITEMS } from "@/lib/counter-items";
+import {
+  businessDayCutoffMs,
+  msUntilNextBusinessDay,
+} from "@/lib/business-day";
+import { COUNTER_ITEMS, isCounterItemName } from "@/lib/counter-items";
 import {
   TABLE_SOURCES,
   combinedLines,
@@ -15,7 +18,12 @@ import {
   tokenOf,
   type TableBill,
 } from "@/lib/billing";
-import { addCounterItem, settleOrderPayment, settleTableBill } from "@/app/manager/actions";
+import {
+  addCounterItem,
+  removeCounterItem,
+  settleOrderPayment,
+  settleTableBill,
+} from "@/app/manager/actions";
 import {
   COUNTER_PAYMENT_OPTIONS,
   sourceLabel,
@@ -41,9 +49,11 @@ export function ManagerBillingScreen() {
   const [orders, setOrders] = useState<OrderWithItems[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
-  const [openTarget, setOpenTarget] = useState<{ kind: "table"; source: OrderSource } | { kind: "order"; id: string } | null>(
-    null,
-  );
+  const [openTarget, setOpenTarget] = useState<
+    | { kind: "table"; source: OrderSource }
+    | { kind: "order"; id: string }
+    | null
+  >(null);
   const [query, setQuery] = useState("");
 
   useEffect(() => {
@@ -75,7 +85,10 @@ export function ManagerBillingScreen() {
   // Same 4AM boundary as every other board — a stale bill from yesterday's
   // shift must not sit on today's table tile.
   useEffect(() => {
-    const id = setTimeout(() => window.location.reload(), msUntilNextBusinessDay(Date.now()));
+    const id = setTimeout(
+      () => window.location.reload(),
+      msUntilNextBusinessDay(Date.now()),
+    );
     return () => clearTimeout(id);
   }, []);
 
@@ -88,41 +101,55 @@ export function ManagerBillingScreen() {
     }
     const channel = supabase
       .channel("manager:billing")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "orders" }, (payload) => {
-        const row = payload.new as OrderRow;
-        if (row.status === "awaiting_payment") return;
-        supabase
-          .from("order_items")
-          .select("*")
-          .eq("order_id", row.id)
-          .then(({ data }) => {
-            setOrders((prev) => [...(prev ?? []), { ...row, order_items: (data as OrderItemRow[]) ?? [] }]);
-          });
-      })
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders" }, (payload) => {
-        const row = payload.new as OrderRow;
-        setOrders((prev) => {
-          if (!prev) return prev;
-          if (prev.some((o) => o.id === row.id)) {
-            return prev.map((o) => (o.id === row.id ? { ...o, ...row } : o));
-          }
-          // A phone order becomes visible the moment payment lands, which
-          // arrives as an UPDATE out of awaiting_payment, not an INSERT.
-          if (row.status === "awaiting_payment") return prev;
-          void supabase
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "orders" },
+        (payload) => {
+          const row = payload.new as OrderRow;
+          if (row.status === "awaiting_payment") return;
+          supabase
             .from("order_items")
             .select("*")
             .eq("order_id", row.id)
             .then(({ data }) => {
-              setOrders((cur) =>
-                cur && !cur.some((o) => o.id === row.id)
-                  ? [...cur, { ...row, order_items: (data as OrderItemRow[]) ?? [] }]
-                  : cur,
-              );
+              setOrders((prev) => [
+                ...(prev ?? []),
+                { ...row, order_items: (data as OrderItemRow[]) ?? [] },
+              ]);
             });
-          return prev;
-        });
-      })
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "orders" },
+        (payload) => {
+          const row = payload.new as OrderRow;
+          setOrders((prev) => {
+            if (!prev) return prev;
+            if (prev.some((o) => o.id === row.id)) {
+              return prev.map((o) => (o.id === row.id ? { ...o, ...row } : o));
+            }
+            // A phone order becomes visible the moment payment lands, which
+            // arrives as an UPDATE out of awaiting_payment, not an INSERT.
+            if (row.status === "awaiting_payment") return prev;
+            void supabase
+              .from("order_items")
+              .select("*")
+              .eq("order_id", row.id)
+              .then(({ data }) => {
+                setOrders((cur) =>
+                  cur && !cur.some((o) => o.id === row.id)
+                    ? [
+                        ...cur,
+                        { ...row, order_items: (data as OrderItemRow[]) ?? [] },
+                      ]
+                    : cur,
+                );
+              });
+            return prev;
+          });
+        },
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
@@ -135,15 +162,39 @@ export function ManagerBillingScreen() {
   function appendItem(orderId: string, item: OrderItemRow) {
     setOrders(
       (prev) =>
-        prev?.map((o) => (o.id === orderId ? { ...o, order_items: [...o.order_items, item] } : o)) ?? prev,
+        prev?.map((o) =>
+          o.id === orderId
+            ? { ...o, order_items: [...o.order_items, item] }
+            : o,
+        ) ?? prev,
+    );
+  }
+
+  function removeItem(orderId: string, itemRowId: string) {
+    setOrders(
+      (prev) =>
+        prev?.map((o) =>
+          o.id === orderId
+            ? {
+                ...o,
+                order_items: o.order_items.filter((it) => it.id !== itemRowId),
+              }
+            : o,
+        ) ?? prev,
     );
   }
 
   const all = useMemo(() => orders ?? [], [orders]);
-  const bills = useMemo(() => TABLE_SOURCES.map((t) => tableBill(all, t)), [all]);
+  const bills = useMemo(
+    () => TABLE_SOURCES.map((t) => tableBill(all, t)),
+    [all],
+  );
   // The real, complete set — drives the header stats regardless of search.
   const others = useMemo(() => otherUnpaid(all), [all]);
-  const searchResults = useMemo(() => (query.trim() ? findByToken(all, query) : []), [all, query]);
+  const searchResults = useMemo(
+    () => (query.trim() ? findByToken(all, query) : []),
+    [all, query],
+  );
   // What the list below actually renders: excludes anything the search is
   // already showing, so a match that is also unpaid does not draw two live
   // BillPanels for the same order at once, each with its own settle buttons.
@@ -154,7 +205,9 @@ export function ManagerBillingScreen() {
   }, [others, searchResults]);
 
   const owedTables = bills.filter((b) => b.orders.length > 0).length;
-  const totalOwed = bills.reduce((s, b) => s + b.total, 0) + others.reduce((s, o) => s + orderLineTotal(o), 0);
+  const totalOwed =
+    bills.reduce((s, b) => s + b.total, 0) +
+    others.reduce((s, o) => s + orderLineTotal(o), 0);
 
   return (
     <main className="flex h-dvh flex-col overflow-hidden">
@@ -163,11 +216,21 @@ export function ManagerBillingScreen() {
       </ManagerNav>
 
       <div className="flex flex-none flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-ink/10 px-4 py-2.5 md:px-6">
-        <Stat n={owedTables} label="tables owe" tone={owedTables > 0 ? "alert" : "calm"} />
-        <Stat n={others.length} label="parcel / other owe" tone={others.length > 0 ? "alert" : "calm"} />
+        <Stat
+          n={owedTables}
+          label="tables owe"
+          tone={owedTables > 0 ? "alert" : "calm"}
+        />
+        <Stat
+          n={others.length}
+          label="parcel / other owe"
+          tone={others.length > 0 ? "alert" : "calm"}
+        />
         <span className="ml-auto text-[12px] font-extrabold text-ink">
           {money(totalOwed)}
-          <span className="pl-1 text-[10.5px] font-semibold text-muted">to collect</span>
+          <span className="pl-1 text-[10.5px] font-semibold text-muted">
+            to collect
+          </span>
         </span>
       </div>
 
@@ -177,7 +240,9 @@ export function ManagerBillingScreen() {
             {error}
           </div>
         )}
-        {!error && orders === null && <span className="text-[12.5px] text-muted">Loading…</span>}
+        {!error && orders === null && (
+          <span className="text-[12.5px] text-muted">Loading…</span>
+        )}
 
         {orders !== null && (
           <div className="flex flex-col gap-6">
@@ -188,10 +253,14 @@ export function ManagerBillingScreen() {
                   <TableBillTile
                     key={b.source}
                     bill={b}
-                    open={openTarget?.kind === "table" && openTarget.source === b.source}
+                    open={
+                      openTarget?.kind === "table" &&
+                      openTarget.source === b.source
+                    }
                     onToggle={() =>
                       setOpenTarget(
-                        openTarget?.kind === "table" && openTarget.source === b.source
+                        openTarget?.kind === "table" &&
+                          openTarget.source === b.source
                           ? null
                           : { kind: "table", source: b.source },
                       )
@@ -201,9 +270,13 @@ export function ManagerBillingScreen() {
               </div>
               {openTarget?.kind === "table" && (
                 <BillPanel
-                  target={{ kind: "table", bill: bills.find((b) => b.source === openTarget.source)! }}
+                  target={{
+                    kind: "table",
+                    bill: bills.find((b) => b.source === openTarget.source)!,
+                  }}
                   onSettled={() => setOpenTarget(null)}
                   onItemAdded={appendItem}
+                  onItemRemoved={removeItem}
                   onError={setError}
                 />
               )}
@@ -220,13 +293,20 @@ export function ManagerBillingScreen() {
               {query.trim() && (
                 <div className="flex flex-col gap-2">
                   {searchResults.length === 0 && (
-                    <span className="text-[12px] text-muted">No token matches “{query.trim()}”.</span>
+                    <span className="text-[12px] text-muted">
+                      No token matches “{query.trim()}”.
+                    </span>
                   )}
                   {searchResults.map((o) => (
                     <div key={o.id} className="flex flex-col gap-2">
                       <button
                         onClick={() =>
-                          setOpenTarget(openTarget?.kind === "order" && openTarget.id === o.id ? null : { kind: "order", id: o.id })
+                          setOpenTarget(
+                            openTarget?.kind === "order" &&
+                              openTarget.id === o.id
+                              ? null
+                              : { kind: "order", id: o.id },
+                          )
                         }
                         className={`flex flex-wrap items-center gap-2.5 rounded-xl border p-3 text-left transition ${
                           openTarget?.kind === "order" && openTarget.id === o.id
@@ -237,20 +317,29 @@ export function ManagerBillingScreen() {
                         <span className="rounded-[7px] bg-primary px-2.5 py-1.5 text-[11px] font-extrabold text-surface">
                           {sourceLabel(o.source)}
                         </span>
-                        <span className="text-[11px] font-bold text-muted">{tokenOf(o)}</span>
-                        <span className="text-[12px] font-semibold text-ink">{since(o.created_at, now)}</span>
+                        <span className="text-[11px] font-bold text-muted">
+                          {tokenOf(o)}
+                        </span>
+                        <span className="text-[12px] font-semibold text-ink">
+                          {since(o.created_at, now)}
+                        </span>
                         <span className="ml-auto text-[13px] font-extrabold text-ink">
-                          {o.payment_status === "paid" ? "Already paid" : money(orderLineTotal(o))}
+                          {o.payment_status === "paid"
+                            ? "Already paid"
+                            : money(orderLineTotal(o))}
                         </span>
                       </button>
-                      {openTarget?.kind === "order" && openTarget.id === o.id && o.payment_status !== "paid" && (
-                        <BillPanel
-                          target={{ kind: "order", order: o }}
-                          onSettled={() => setOpenTarget(null)}
-                          onItemAdded={appendItem}
-                          onError={setError}
-                        />
-                      )}
+                      {openTarget?.kind === "order" &&
+                        openTarget.id === o.id &&
+                        o.payment_status !== "paid" && (
+                          <BillPanel
+                            target={{ kind: "order", order: o }}
+                            onSettled={() => setOpenTarget(null)}
+                            onItemAdded={appendItem}
+                            onItemRemoved={removeItem}
+                            onError={setError}
+                          />
+                        )}
                     </div>
                   ))}
                 </div>
@@ -264,7 +353,11 @@ export function ManagerBillingScreen() {
                   <div key={o.id} className="flex flex-col gap-2">
                     <button
                       onClick={() =>
-                        setOpenTarget(openTarget?.kind === "order" && openTarget.id === o.id ? null : { kind: "order", id: o.id })
+                        setOpenTarget(
+                          openTarget?.kind === "order" && openTarget.id === o.id
+                            ? null
+                            : { kind: "order", id: o.id },
+                        )
                       }
                       className={`flex flex-wrap items-center gap-2.5 rounded-xl border p-3 text-left transition ${
                         openTarget?.kind === "order" && openTarget.id === o.id
@@ -275,15 +368,22 @@ export function ManagerBillingScreen() {
                       <span className="rounded-[7px] bg-primary px-2.5 py-1.5 text-[11px] font-extrabold text-surface">
                         {sourceLabel(o.source)}
                       </span>
-                      <span className="text-[11px] font-bold text-muted">{tokenOf(o)}</span>
-                      <span className="text-[12px] font-semibold text-ink">{since(o.created_at, now)}</span>
-                      <span className="ml-auto text-[13px] font-extrabold text-ink">{money(orderLineTotal(o))}</span>
+                      <span className="text-[11px] font-bold text-muted">
+                        {tokenOf(o)}
+                      </span>
+                      <span className="text-[12px] font-semibold text-ink">
+                        {since(o.created_at, now)}
+                      </span>
+                      <span className="ml-auto text-[13px] font-extrabold text-ink">
+                        {money(orderLineTotal(o))}
+                      </span>
                     </button>
                     {openTarget?.kind === "order" && openTarget.id === o.id && (
                       <BillPanel
                         target={{ kind: "order", order: o }}
                         onSettled={() => setOpenTarget(null)}
                         onItemAdded={appendItem}
+                        onItemRemoved={removeItem}
                         onError={setError}
                       />
                     )}
@@ -303,19 +403,43 @@ function orderLineTotal(o: OrderWithItems): number {
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <span className="text-[11px] font-bold tracking-[.12em] text-muted">{children}</span>;
+  return (
+    <span className="text-[11px] font-bold tracking-[.12em] text-muted">
+      {children}
+    </span>
+  );
 }
 
-function Stat({ n, label, tone }: { n: number; label: string; tone: "alert" | "calm" }) {
+function Stat({
+  n,
+  label,
+  tone,
+}: {
+  n: number;
+  label: string;
+  tone: "alert" | "calm";
+}) {
   return (
     <span className="flex items-baseline gap-1">
-      <span className={`text-[15px] font-extrabold ${tone === "alert" ? "text-non-veg" : "text-ink"}`}>{n}</span>
+      <span
+        className={`text-[15px] font-extrabold ${tone === "alert" ? "text-non-veg" : "text-ink"}`}
+      >
+        {n}
+      </span>
       <span className="text-[10.5px] font-semibold text-muted">{label}</span>
     </span>
   );
 }
 
-function TableBillTile({ bill, open, onToggle }: { bill: TableBill; open: boolean; onToggle: () => void }) {
+function TableBillTile({
+  bill,
+  open,
+  onToggle,
+}: {
+  bill: TableBill;
+  open: boolean;
+  onToggle: () => void;
+}) {
   const label = sourceLabel(bill.source);
   const owes = bill.orders.length > 0;
 
@@ -331,23 +455,31 @@ function TableBillTile({ bill, open, onToggle }: { bill: TableBill; open: boolea
             : "border-secondary/60 bg-secondary/[0.12] hover:border-primary"
       }`}
     >
-      <span className="text-[11px] font-bold tracking-[.1em] text-muted">{label}</span>
+      <span className="text-[11px] font-bold tracking-[.1em] text-muted">
+        {label}
+      </span>
       {owes ? (
         <>
-          <span className="text-lg font-extrabold text-ink">{money(bill.total)}</span>
+          <span className="text-lg font-extrabold text-ink">
+            {money(bill.total)}
+          </span>
           <span className="text-[11px] font-semibold text-muted">
-            {bill.itemCount} item{bill.itemCount === 1 ? "" : "s"} · {bill.orders.length} round
+            {bill.itemCount} item{bill.itemCount === 1 ? "" : "s"} ·{" "}
+            {bill.orders.length} round
             {bill.orders.length === 1 ? "" : "s"}
           </span>
         </>
       ) : (
-        <span className="text-[12px] font-semibold text-muted">Nothing owed</span>
+        <span className="text-[12px] font-semibold text-muted">
+          Nothing owed
+        </span>
       )}
     </button>
   );
 }
 
-type BillTarget = { kind: "table"; bill: TableBill } | { kind: "order"; order: OrderWithItems };
+type BillTarget =
+  { kind: "table"; bill: TableBill } | { kind: "order"; order: OrderWithItems };
 
 /** The bill itself — line items, a bottle stepper, and the settle buttons.
  *  Shared between a table's combined bill and a single token-search order,
@@ -356,11 +488,13 @@ function BillPanel({
   target,
   onSettled,
   onItemAdded,
+  onItemRemoved,
   onError,
 }: {
   target: BillTarget;
   onSettled: () => void;
   onItemAdded: (orderId: string, item: OrderItemRow) => void;
+  onItemRemoved: (orderId: string, itemRowId: string) => void;
   onError: (m: string) => void;
 }) {
   const [busy, setBusy] = useState(false);
@@ -368,7 +502,14 @@ function BillPanel({
 
   const orders = target.kind === "table" ? target.bill.orders : [target.order];
   const lines = combinedLines(orders);
-  const total = target.kind === "table" ? target.bill.total : orderLineTotal(target.order);
+  // Individual rows, not merged like `lines` — each Add created its own row,
+  // so removal needs to target exactly one of them, which combinedLines()
+  // deliberately throws away in favor of a readable qty-per-name summary.
+  const bottleRows = orders.flatMap((o) =>
+    o.order_items.filter((it) => isCounterItemName(it.item_name)).map((it) => ({ orderId: o.id, item: it })),
+  );
+  const total =
+    target.kind === "table" ? target.bill.total : orderLineTotal(target.order);
   // The order a bottle gets billed against — the most recent round, since
   // that is the one still open. tableBill() sorts oldest-first, so that's
   // the last entry.
@@ -378,7 +519,9 @@ function BillPanel({
     setBusy(true);
     try {
       const result =
-        target.kind === "table" ? await settleTableBill(target.bill.source, method) : await settleOrderPayment(target.order.id, method);
+        target.kind === "table"
+          ? await settleTableBill(target.bill.source, method)
+          : await settleOrderPayment(target.order.id, method);
       if (result.ok) onSettled();
       else onError(result.error ?? "That didn't go through — try again.");
     } catch (e) {
@@ -395,7 +538,21 @@ function BillPanel({
     try {
       const result = await addCounterItem(growOrder.id, itemId, qty);
       if (result.ok && result.item) onItemAdded(growOrder.id, result.item);
-      else if (!result.ok) onError(result.error ?? "Couldn't add that — try again.");
+      else if (!result.ok)
+        onError(result.error ?? "Couldn't add that — try again.");
+    } catch (e) {
+      onError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeBottle(orderId: string, itemRowId: string) {
+    setBusy(true);
+    try {
+      const result = await removeCounterItem(orderId, itemRowId);
+      if (result.ok) onItemRemoved(orderId, itemRowId);
+      else onError(result.error ?? "Couldn't remove that — try again.");
     } catch (e) {
       onError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -409,23 +566,61 @@ function BillPanel({
     <div className="flex flex-col gap-3 rounded-xl border border-ink/[0.12] bg-surface p-3.5">
       <div className="flex flex-col gap-1.5">
         {lines.map((l) => (
-          <div key={`${l.name}::${l.unitPrice}`} className="flex items-center gap-2 text-[12.5px]">
-            <span className="min-w-6 font-extrabold text-primary">{l.qty}×</span>
+          <div
+            key={`${l.name}::${l.unitPrice}`}
+            className="flex items-center gap-2 text-[12.5px]"
+          >
+            <span className="min-w-6 font-extrabold text-primary">
+              {l.qty}×
+            </span>
             <span className="flex-1 font-semibold text-ink">{l.name}</span>
-            <span className="font-bold text-muted">{money(l.unitPrice * l.qty)}</span>
+            <span className="font-bold text-muted">
+              {money(l.unitPrice * l.qty)}
+            </span>
           </div>
         ))}
       </div>
 
+      {bottleRows.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 border-t border-dashed border-ink/[0.14] pt-2.5">
+          <span className="text-[10.5px] font-bold tracking-[.1em] text-muted">REMOVE</span>
+          {bottleRows.map(({ orderId, item }) => (
+            <button
+              key={item.id}
+              disabled={busy}
+              onClick={() => removeBottle(orderId, item.id)}
+              className="flex items-center gap-1.5 rounded-lg border border-ink/[0.16] py-1 pl-2.5 pr-1.5 text-[11.5px] font-semibold text-ink transition hover:border-non-veg hover:text-non-veg disabled:opacity-40"
+            >
+              {item.quantity}× {item.item_name}
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-ink/[0.08] text-[10px] font-bold">
+                ×
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {growOrder && (
         <div className="flex flex-wrap items-center gap-2 border-t border-dashed border-ink/[0.14] pt-2.5">
-          <span className="text-[10.5px] font-bold tracking-[.1em] text-muted">ADD</span>
+          <span className="text-[10.5px] font-bold tracking-[.1em] text-muted">
+            ADD
+          </span>
           {COUNTER_ITEMS.map((item) => (
-            <div key={item.id} className="flex items-center gap-1 rounded-lg border border-ink/[0.16] px-1.5 py-1">
-              <span className="pl-1 text-[11.5px] font-semibold text-ink">{item.name}</span>
+            <div
+              key={item.id}
+              className="flex items-center gap-1 rounded-lg border border-ink/[0.16] px-1.5 py-1"
+            >
+              <span className="pl-1 text-[11.5px] font-semibold text-ink">
+                {item.name}
+              </span>
               <button
                 disabled={busy}
-                onClick={() => setBottleQty((q) => ({ ...q, [item.id]: Math.max(1, (q[item.id] ?? 1) - 1) }))}
+                onClick={() =>
+                  setBottleQty((q) => ({
+                    ...q,
+                    [item.id]: Math.max(1, (q[item.id] ?? 1) - 1),
+                  }))
+                }
                 className="flex h-5 w-5 items-center justify-center text-xs font-bold text-primary disabled:opacity-40"
               >
                 −
@@ -435,7 +630,12 @@ function BillPanel({
               </span>
               <button
                 disabled={busy}
-                onClick={() => setBottleQty((q) => ({ ...q, [item.id]: Math.min(20, (q[item.id] ?? 1) + 1) }))}
+                onClick={() =>
+                  setBottleQty((q) => ({
+                    ...q,
+                    [item.id]: Math.min(20, (q[item.id] ?? 1) + 1),
+                  }))
+                }
                 className="flex h-5 w-5 items-center justify-center text-xs font-bold text-primary disabled:opacity-40"
               >
                 +
@@ -453,7 +653,9 @@ function BillPanel({
       )}
 
       <div className="flex items-center justify-between border-t border-dashed border-ink/[0.14] pt-2.5">
-        <span className="text-xs font-semibold text-muted">Total to collect</span>
+        <span className="text-xs font-semibold text-muted">
+          Total to collect
+        </span>
         <span className="text-lg font-extrabold text-ink">{money(total)}</span>
       </div>
 
