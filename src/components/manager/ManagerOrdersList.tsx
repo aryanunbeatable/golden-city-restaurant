@@ -1,11 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { getSupabase } from "@/lib/supabase/client";
 import { since } from "@/lib/orders";
 import { orderTotal } from "@/lib/history-report";
 import { money } from "@/lib/cart";
-import { businessDayCutoffMs, msUntilNextBusinessDay } from "@/lib/business-day";
+import {
+  businessDayCutoffMs,
+  msUntilNextBusinessDay,
+} from "@/lib/business-day";
 import { clockLabel } from "@/lib/service-hours";
 import { playApprovalChime } from "@/lib/use-pending-approvals";
 import {
@@ -28,19 +32,46 @@ function itemCount(items: OrderItemRow[]): number {
 
 function summarize(items: OrderItemRow[]): string {
   return items
-    .map((it) => `${it.quantity}× ${it.item_name}${it.variant_name ? ` (${it.variant_name})` : ""}`)
+    .map(
+      (it) =>
+        `${it.quantity}× ${it.item_name}${it.variant_name ? ` (${it.variant_name})` : ""}`,
+    )
     .join(", ");
 }
 
 function isLive(o: OrderRow): boolean {
-  return o.status !== "served" && o.status !== "cancelled" && o.status !== "awaiting_payment";
+  return (
+    o.status !== "served" &&
+    o.status !== "cancelled" &&
+    o.status !== "awaiting_payment"
+  );
+}
+
+/**
+ * Does this order still hold the table? Broader than isLive(): the kitchen
+ * marking food served doesn't mean the guest has left — they're still
+ * sitting there until the bill is actually paid. Only a paid served order
+ * (or a voided/abandoned one) frees the table.
+ */
+function occupiesTable(o: OrderRow): boolean {
+  if (o.status === "cancelled" || o.status === "awaiting_payment") return false;
+  return !(o.status === "served" && o.payment_status === "paid");
+}
+
+function collectHref(o: OrderRow): string {
+  return isTableSource(o.source)
+    ? `/manager/billing?table=${o.source}`
+    : `/manager/billing?order=${o.id}`;
 }
 
 /** Approved and scheduled, but the kitchen should already have started it. */
 function isRunningLate(o: OrderRow, now: number): boolean {
   if (!o.scheduled_for) return false;
   if (o.status !== "confirmed" && o.status !== "preparing") return false;
-  return now > new Date(o.scheduled_for).getTime() - o.estimated_prep_minutes * 60_000;
+  return (
+    now >
+    new Date(o.scheduled_for).getTime() - o.estimated_prep_minutes * 60_000
+  );
 }
 
 /**
@@ -84,7 +115,10 @@ export function ManagerOrdersList() {
 
   // Same 4AM boundary as the kitchen board.
   useEffect(() => {
-    const id = setTimeout(() => window.location.reload(), msUntilNextBusinessDay(Date.now()));
+    const id = setTimeout(
+      () => window.location.reload(),
+      msUntilNextBusinessDay(Date.now()),
+    );
     return () => clearTimeout(id);
   }, []);
 
@@ -98,45 +132,59 @@ export function ManagerOrdersList() {
     }
     const channel = supabase
       .channel("manager:service-board")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "orders" }, (payload) => {
-        const row = payload.new as OrderRow;
-        if (row.status === "awaiting_payment") return;
-        supabase
-          .from("order_items")
-          .select("*")
-          .eq("order_id", row.id)
-          .then(({ data }) => {
-            setOrders((prev) => [
-              { ...row, order_items: (data as OrderItemRow[]) ?? [] },
-              ...(prev ?? []),
-            ]);
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "orders" },
+        (payload) => {
+          const row = payload.new as OrderRow;
+          if (row.status === "awaiting_payment") return;
+          supabase
+            .from("order_items")
+            .select("*")
+            .eq("order_id", row.id)
+            .then(({ data }) => {
+              setOrders((prev) => [
+                { ...row, order_items: (data as OrderItemRow[]) ?? [] },
+                ...(prev ?? []),
+              ]);
+            });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "orders" },
+        (payload) => {
+          const row = payload.new as OrderRow;
+          setOrders((prev) => {
+            if (!prev) return prev;
+            const known = prev.some((o) => o.id === row.id);
+            // A phone order becomes visible the moment payment lands, which
+            // arrives as an UPDATE out of awaiting_payment, not an INSERT.
+            if (!known) {
+              if (row.status === "awaiting_payment") return prev;
+              void supabase
+                .from("order_items")
+                .select("*")
+                .eq("order_id", row.id)
+                .then(({ data }) => {
+                  setOrders((cur) =>
+                    cur && !cur.some((o) => o.id === row.id)
+                      ? [
+                          {
+                            ...row,
+                            order_items: (data as OrderItemRow[]) ?? [],
+                          },
+                          ...cur,
+                        ]
+                      : cur,
+                  );
+                });
+              return prev;
+            }
+            return prev.map((o) => (o.id === row.id ? { ...o, ...row } : o));
           });
-      })
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders" }, (payload) => {
-        const row = payload.new as OrderRow;
-        setOrders((prev) => {
-          if (!prev) return prev;
-          const known = prev.some((o) => o.id === row.id);
-          // A phone order becomes visible the moment payment lands, which
-          // arrives as an UPDATE out of awaiting_payment, not an INSERT.
-          if (!known) {
-            if (row.status === "awaiting_payment") return prev;
-            void supabase
-              .from("order_items")
-              .select("*")
-              .eq("order_id", row.id)
-              .then(({ data }) => {
-                setOrders((cur) =>
-                  cur && !cur.some((o) => o.id === row.id)
-                    ? [{ ...row, order_items: (data as OrderItemRow[]) ?? [] }, ...cur]
-                    : cur,
-                );
-              });
-            return prev;
-          }
-          return prev.map((o) => (o.id === row.id ? { ...o, ...row } : o));
-        });
-      })
+        },
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
@@ -144,51 +192,82 @@ export function ManagerOrdersList() {
   }, []);
 
   function applyLocal(id: string, patch: Partial<OrderRow>) {
-    setOrders((prev) => prev?.map((o) => (o.id === id ? { ...o, ...patch } : o)) ?? prev);
+    setOrders(
+      (prev) =>
+        prev?.map((o) => (o.id === id ? { ...o, ...patch } : o)) ?? prev,
+    );
   }
 
   const all = useMemo(() => orders ?? [], [orders]);
   const live = useMemo(() => all.filter(isLive), [all]);
 
   const approvals = useMemo(
-    () => all.filter((o) => o.source === "phone" && o.status === "waiting_confirmation"),
+    () =>
+      all.filter(
+        (o) => o.source === "phone" && o.status === "waiting_confirmation",
+      ),
     [all],
   );
-  const unpaidReady = useMemo(
-    () => live.filter((o) => o.status === "ready" && o.payment_status === "pending"),
-    [live],
+  // Sourced from `all`, not `live` — `live` structurally excludes `served`,
+  // but a served order still needs collecting for exactly as long as a ready
+  // one does. The kitchen marking food served is not a payment event.
+  const unpaidToCollect = useMemo(
+    () =>
+      all.filter(
+        (o) =>
+          (o.status === "ready" || o.status === "served") &&
+          o.payment_status === "pending",
+      ),
+    [all],
   );
   const phoneLive = useMemo(
     () =>
       live
-        .filter((o) => o.source === "phone" && o.status !== "waiting_confirmation")
-        .sort((a, b) => (a.scheduled_for ?? "").localeCompare(b.scheduled_for ?? "")),
+        .filter(
+          (o) => o.source === "phone" && o.status !== "waiting_confirmation",
+        )
+        .sort((a, b) =>
+          (a.scheduled_for ?? "").localeCompare(b.scheduled_for ?? ""),
+        ),
     [live],
   );
   const counterLive = useMemo(
     () => live.filter((o) => !isTableSource(o.source) && o.source !== "phone"),
     [live],
   );
+  // "Completed" now means paid too, not just served — consistent with the
+  // table only going free once payment lands. A served-but-unpaid order
+  // stays out of here; it's still visible via its table tile / Needs you.
   const completed = useMemo(
-    () => all.filter((o) => o.status === "served" || o.status === "cancelled"),
+    () =>
+      all.filter(
+        (o) =>
+          (o.status === "served" && o.payment_status === "paid") ||
+          o.status === "cancelled",
+      ),
     [all],
   );
 
   // Chime when a new approval lands. A ref, so this never triggers a render.
   const lastApprovalCount = useRef<number | null>(null);
   useEffect(() => {
-    if (lastApprovalCount.current !== null && approvals.length > lastApprovalCount.current) {
+    if (
+      lastApprovalCount.current !== null &&
+      approvals.length > lastApprovalCount.current
+    ) {
       playApprovalChime();
     }
     lastApprovalCount.current = approvals.length;
   }, [approvals.length]);
 
-  const cooking = live.filter((o) => o.status === "confirmed" || o.status === "preparing").length;
+  const cooking = live.filter(
+    (o) => o.status === "confirmed" || o.status === "preparing",
+  ).length;
   const atPass = live.filter((o) => o.status === "ready").length;
   const takings = all
     .filter((o) => o.status !== "cancelled" && o.payment_status === "paid")
     .reduce((sum, o) => sum + orderTotal(o.order_items), 0);
-  const needsYou = approvals.length + unpaidReady.length;
+  const needsYou = approvals.length + unpaidToCollect.length;
 
   return (
     <main className="flex h-dvh flex-col overflow-hidden">
@@ -197,12 +276,18 @@ export function ManagerOrdersList() {
       </ManagerNav>
 
       <div className="flex flex-none flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-ink/10 px-4 py-2.5 md:px-6">
-        <Stat n={needsYou} label="need you" tone={needsYou > 0 ? "alert" : "calm"} />
+        <Stat
+          n={needsYou}
+          label="need you"
+          tone={needsYou > 0 ? "alert" : "calm"}
+        />
         <Stat n={cooking} label="cooking" tone="calm" />
         <Stat n={atPass} label="at the pass" tone="calm" />
         <span className="ml-auto text-[12px] font-extrabold text-ink">
           {money(takings)}
-          <span className="pl-1 text-[10.5px] font-semibold text-muted">taken today</span>
+          <span className="pl-1 text-[10.5px] font-semibold text-muted">
+            taken today
+          </span>
         </span>
       </div>
 
@@ -212,7 +297,9 @@ export function ManagerOrdersList() {
             {error}
           </div>
         )}
-        {!error && orders === null && <span className="text-[12.5px] text-muted">Loading…</span>}
+        {!error && orders === null && (
+          <span className="text-[12.5px] text-muted">Loading…</span>
+        )}
 
         {orders !== null && (
           <div className="flex flex-col gap-6">
@@ -228,21 +315,31 @@ export function ManagerOrdersList() {
                     onError={setError}
                   />
                 ))}
-                {unpaidReady.map((o) => (
+                {unpaidToCollect.map((o) => (
                   <div
                     key={o.id}
                     className="flex flex-wrap items-center gap-2.5 rounded-xl border border-secondary/50 bg-secondary/[0.1] p-3.5"
                   >
                     <SourceBadge order={o} />
                     <span className="text-[12.5px] font-bold text-ink">
-                      Ready — {money(orderTotal(o.order_items))} to collect
+                      {o.status === "ready" ? "Ready" : "Served"} —{" "}
+                      {money(orderTotal(o.order_items))} to collect
                     </span>
-                    <span className="text-[11px] font-semibold text-muted">{since(o.created_at, now)}</span>
-                    <div className="ml-auto">
+                    <span className="text-[11px] font-semibold text-muted">
+                      {since(o.created_at, now)}
+                    </span>
+                    <div className="ml-auto flex items-center gap-1.5">
+                      <Link
+                        href={collectHref(o)}
+                        className="rounded-lg bg-primary px-2.5 py-1.5 text-[11px] font-extrabold text-surface transition hover:bg-[#7A180B]"
+                      >
+                        Collect
+                      </Link>
                       <OrderActions
                         order={o}
                         onApplied={(patch) => applyLocal(o.id, patch)}
                         onError={setError}
+                        showPaymentStatus={false}
                       />
                     </div>
                   </div>
@@ -254,7 +351,8 @@ export function ManagerOrdersList() {
               <SectionTitle>Tables</SectionTitle>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {TABLES.map((t) => {
-                  const order = live.find((o) => o.source === t) ?? null;
+                  const order =
+                    all.find((o) => o.source === t && occupiesTable(o)) ?? null;
                   return (
                     <TableTile
                       key={t}
@@ -269,7 +367,11 @@ export function ManagerOrdersList() {
               </div>
               {openTable && (
                 <TableDetail
-                  order={live.find((o) => o.source === openTable) ?? null}
+                  order={
+                    all.find(
+                      (o) => o.source === openTable && occupiesTable(o),
+                    ) ?? null
+                  }
                   now={now}
                   onApplied={applyLocal}
                   onError={setError}
@@ -309,8 +411,8 @@ export function ManagerOrdersList() {
 
             {live.length === 0 && approvals.length === 0 && (
               <div className="rounded-xl border border-dashed border-ink/20 px-5 py-10 text-center text-[12.5px] text-muted">
-                Nothing live right now. Orders from tables, the counter, the aggregators and the phone link
-                all land here.
+                Nothing live right now. Orders from tables, the counter, the
+                aggregators and the phone link all land here.
               </div>
             )}
 
@@ -341,13 +443,29 @@ export function ManagerOrdersList() {
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <span className="text-[11px] font-bold tracking-[.12em] text-muted">{children}</span>;
+  return (
+    <span className="text-[11px] font-bold tracking-[.12em] text-muted">
+      {children}
+    </span>
+  );
 }
 
-function Stat({ n, label, tone }: { n: number; label: string; tone: "alert" | "calm" }) {
+function Stat({
+  n,
+  label,
+  tone,
+}: {
+  n: number;
+  label: string;
+  tone: "alert" | "calm";
+}) {
   return (
     <span className="flex items-baseline gap-1">
-      <span className={`text-[15px] font-extrabold ${tone === "alert" ? "text-non-veg" : "text-ink"}`}>{n}</span>
+      <span
+        className={`text-[15px] font-extrabold ${tone === "alert" ? "text-non-veg" : "text-ink"}`}
+      >
+        {n}
+      </span>
       <span className="text-[10.5px] font-semibold text-muted">{label}</span>
     </span>
   );
@@ -357,7 +475,9 @@ function SourceBadge({ order }: { order: OrderRow }) {
   return (
     <span
       className={`rounded-[7px] px-2.5 py-1.5 text-[11px] font-extrabold ${
-        isTableSource(order.source) ? "bg-tertiary text-surface" : "bg-primary text-surface"
+        isTableSource(order.source)
+          ? "bg-tertiary text-surface"
+          : "bg-primary text-surface"
       }`}
     >
       {sourceLabel(order.source)}
@@ -380,7 +500,10 @@ function TableTile({
 }) {
   const label = sourceLabel(table as OrderRow["source"]);
   const status = order ? STATUS_STYLE[order.status] : null;
-  const unpaid = order?.status === "ready" && order.payment_status === "pending";
+  const unpaid =
+    !!order &&
+    order.payment_status === "pending" &&
+    (order.status === "ready" || order.status === "served");
 
   return (
     <button
@@ -396,18 +519,25 @@ function TableTile({
               : "border-ink/[0.12] bg-surface hover:border-primary"
       }`}
     >
-      <span className="text-[11px] font-bold tracking-[.1em] text-muted">{label}</span>
+      <span className="text-[11px] font-bold tracking-[.1em] text-muted">
+        {label}
+      </span>
       {!order ? (
         <span className="text-[12px] font-semibold text-muted/70">Free</span>
       ) : (
         <>
-          <span className={`rounded-full px-2 py-1 text-[10.5px] font-bold ${status!.className}`}>
+          <span
+            className={`rounded-full px-2 py-1 text-[10.5px] font-bold ${status!.className}`}
+          >
             {status!.label}
           </span>
           <span className="text-[11px] font-semibold text-muted">
-            {itemCount(order.order_items)} items · {money(orderTotal(order.order_items))}
+            {itemCount(order.order_items)} items ·{" "}
+            {money(orderTotal(order.order_items))}
           </span>
-          <span className="text-[10px] font-semibold text-muted">{since(order.created_at, now)}</span>
+          <span className="text-[10px] font-semibold text-muted">
+            {since(order.created_at, now)}
+          </span>
         </>
       )}
     </button>
@@ -426,7 +556,14 @@ function TableDetail({
   onError: (m: string) => void;
 }) {
   if (!order) return null;
-  return <OrderRowCard order={order} now={now} onApplied={onApplied} onError={onError} />;
+  return (
+    <OrderRowCard
+      order={order}
+      now={now}
+      onApplied={onApplied}
+      onError={onError}
+    />
+  );
 }
 
 function OrderRowCard({
@@ -447,16 +584,24 @@ function OrderRowCard({
   return (
     <div
       className={`flex flex-col gap-2 rounded-xl border p-3.5 ${
-        voided ? "border-ink/[0.09] bg-surface opacity-55" : late ? "border-non-veg/50 bg-non-veg/[0.05]" : "border-ink/[0.09] bg-surface"
+        voided
+          ? "border-ink/[0.09] bg-surface opacity-55"
+          : late
+            ? "border-non-veg/50 bg-non-veg/[0.05]"
+            : "border-ink/[0.09] bg-surface"
       }`}
     >
       <div className="flex flex-wrap items-center gap-2">
         <SourceBadge order={order} />
-        <span className={`rounded-full px-2.5 py-1 text-[10.5px] font-bold ${status.className}`}>
+        <span
+          className={`rounded-full px-2.5 py-1 text-[10.5px] font-bold ${status.className}`}
+        >
           {status.label}
         </span>
         {order.customer_name && (
-          <span className="text-[12px] font-bold text-ink">{order.customer_name}</span>
+          <span className="text-[12px] font-bold text-ink">
+            {order.customer_name}
+          </span>
         )}
         {order.scheduled_for && (
           <span
@@ -468,13 +613,17 @@ function OrderRowCard({
             by {clockLabel(new Date(order.scheduled_for).getTime())}
           </span>
         )}
-        <span className="text-[10.5px] font-semibold text-muted">{since(order.created_at, now)}</span>
+        <span className="text-[10.5px] font-semibold text-muted">
+          {since(order.created_at, now)}
+        </span>
         <span className="ml-auto text-[13px] font-extrabold text-ink">
           {money(orderTotal(order.order_items))}
         </span>
       </div>
 
-      <span className={`text-[12px] font-semibold text-ink ${voided ? "line-through" : ""}`}>
+      <span
+        className={`text-[12px] font-semibold text-ink ${voided ? "line-through" : ""}`}
+      >
         {summarize(order.order_items)}
       </span>
 

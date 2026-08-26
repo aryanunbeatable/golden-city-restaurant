@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { getSupabase } from "@/lib/supabase/client";
 import { since } from "@/lib/orders";
 import { money } from "@/lib/cart";
@@ -51,11 +52,25 @@ export function ManagerBillingScreen() {
   const [orders, setOrders] = useState<OrderWithItems[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  // Arriving from Active Orders' Collect link (?table=table_2 or
+  // ?order=<id>) pre-opens that bill. /manager/billing is already
+  // dynamically rendered (its page.tsx reads cookies() for the auth check),
+  // so useSearchParams() works here without a Suspense boundary — the
+  // Suspense requirement only applies to a route that would otherwise be
+  // statically prerendered.
+  const searchParams = useSearchParams();
   const [openTarget, setOpenTarget] = useState<
     | { kind: "table"; source: OrderSource }
     | { kind: "order"; id: string }
     | null
-  >(null);
+  >(() => {
+    const table = searchParams.get("table");
+    if (table && (TABLE_SOURCES as readonly string[]).includes(table)) {
+      return { kind: "table", source: table as OrderSource };
+    }
+    const orderId = searchParams.get("order");
+    return orderId ? { kind: "order", id: orderId } : null;
+  });
   const [query, setQuery] = useState("");
 
   useEffect(() => {
