@@ -14,6 +14,8 @@ import {
   combinedLines,
   findByToken,
   otherUnpaid,
+  staleDateLabel,
+  staleUnpaid,
   tableBill,
   tokenOf,
   type TableBill,
@@ -61,19 +63,40 @@ export function ManagerBillingScreen() {
     return () => clearInterval(id);
   }, []);
 
+  // Two legs, not one: today's orders (every status, needed for the table
+  // tiles) plus a separate, unbounded-by-date sweep for anything still
+  // unpaid from before today — otherwise an order forgotten past the 4AM
+  // rollover would drop off this page with nothing left able to collect it.
+  // The stale leg stays cheap in practice because most orders settle same
+  // day, so "still pending, any day" is naturally a small result set.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const cutoff = new Date(businessDayCutoffMs(Date.now())).toISOString();
-      const { data, error } = await getSupabase()
-        .from("orders")
-        .select("*, order_items(*)")
-        .gte("created_at", cutoff)
-        .neq("status", "awaiting_payment")
-        .order("created_at", { ascending: true });
+      const supabase = getSupabase();
+      const [today, stale] = await Promise.all([
+        supabase
+          .from("orders")
+          .select("*, order_items(*)")
+          .gte("created_at", cutoff)
+          .neq("status", "awaiting_payment")
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("orders")
+          .select("*, order_items(*)")
+          .lt("created_at", cutoff)
+          .eq("payment_status", "pending")
+          .not("status", "in", "(cancelled,awaiting_payment)")
+          .order("created_at", { ascending: true }),
+      ]);
       if (cancelled) return;
-      if (error) setError(error.message);
-      else setOrders((data ?? []) as OrderWithItems[]);
+      if (today.error) setError(today.error.message);
+      else if (stale.error) setError(stale.error.message);
+      else
+        setOrders([
+          ...(stale.data ?? []),
+          ...(today.data ?? []),
+        ] as OrderWithItems[]);
     })().catch((e: unknown) => {
       if (!cancelled) setError(e instanceof Error ? e.message : String(e));
     });
@@ -185,29 +208,56 @@ export function ManagerBillingScreen() {
   }
 
   const all = useMemo(() => orders ?? [], [orders]);
-  const bills = useMemo(
-    () => TABLE_SOURCES.map((t) => tableBill(all, t)),
-    [all],
+  // Fixed at mount, matching the query boundary — the day-rollover effect
+  // above reloads the whole page at 4AM, so this never needs to be reactive.
+  // A lazy useState initializer, not useMemo: Date.now() is impure and
+  // React only allows an impure call in the one-time initializer form.
+  const [cutoffMs] = useState(() => businessDayCutoffMs(Date.now()));
+  const todayOrders = useMemo(
+    () => all.filter((o) => new Date(o.created_at).getTime() >= cutoffMs),
+    [all, cutoffMs],
   );
-  // The real, complete set — drives the header stats regardless of search.
-  const others = useMemo(() => otherUnpaid(all), [all]);
+  const bills = useMemo(
+    () => TABLE_SOURCES.map((t) => tableBill(todayOrders, t)),
+    [todayOrders],
+  );
+  // The real, complete sets — drive the header stats regardless of search.
+  const others = useMemo(() => otherUnpaid(todayOrders), [todayOrders]);
+  // Every source, not just today's parcel/walk-ins — a stale order can be a
+  // forgotten table round too, and staleUnpaid() deliberately doesn't merge
+  // those into a table's tile (see its own doc comment for why).
+  const stale = useMemo(() => staleUnpaid(all, cutoffMs), [all, cutoffMs]);
   const searchResults = useMemo(
     () => (query.trim() ? findByToken(all, query) : []),
     [all, query],
   );
-  // What the list below actually renders: excludes anything the search is
+  // What the lists below actually render: excludes anything the search is
   // already showing, so a match that is also unpaid does not draw two live
   // BillPanels for the same order at once, each with its own settle buttons.
-  const othersToShow = useMemo(() => {
-    if (searchResults.length === 0) return others;
-    const shown = new Set(searchResults.map((o) => o.id));
-    return others.filter((o) => !shown.has(o.id));
-  }, [others, searchResults]);
+  const shownInSearch = useMemo(
+    () => new Set(searchResults.map((o) => o.id)),
+    [searchResults],
+  );
+  const othersToShow = useMemo(
+    () =>
+      shownInSearch.size === 0
+        ? others
+        : others.filter((o) => !shownInSearch.has(o.id)),
+    [others, shownInSearch],
+  );
+  const staleToShow = useMemo(
+    () =>
+      shownInSearch.size === 0
+        ? stale
+        : stale.filter((o) => !shownInSearch.has(o.id)),
+    [stale, shownInSearch],
+  );
 
   const owedTables = bills.filter((b) => b.orders.length > 0).length;
   const totalOwed =
     bills.reduce((s, b) => s + b.total, 0) +
-    others.reduce((s, o) => s + orderLineTotal(o), 0);
+    others.reduce((s, o) => s + orderLineTotal(o), 0) +
+    stale.reduce((s, o) => s + orderLineTotal(o), 0);
 
   return (
     <main className="flex h-dvh flex-col overflow-hidden">
@@ -225,6 +275,11 @@ export function ManagerBillingScreen() {
           n={others.length}
           label="parcel / other owe"
           tone={others.length > 0 ? "alert" : "calm"}
+        />
+        <Stat
+          n={stale.length}
+          label="stale, from earlier days"
+          tone={stale.length > 0 ? "alert" : "calm"}
         />
         <span className="ml-auto text-[12px] font-extrabold text-ink">
           {money(totalOwed)}
@@ -350,44 +405,54 @@ export function ManagerBillingScreen() {
               <section className="flex flex-col gap-2.5">
                 <SectionTitle>Unpaid — parcel &amp; walk-ins</SectionTitle>
                 {othersToShow.map((o) => (
-                  <div key={o.id} className="flex flex-col gap-2">
-                    <button
-                      onClick={() =>
-                        setOpenTarget(
-                          openTarget?.kind === "order" && openTarget.id === o.id
-                            ? null
-                            : { kind: "order", id: o.id },
-                        )
-                      }
-                      className={`flex flex-wrap items-center gap-2.5 rounded-xl border p-3 text-left transition ${
+                  <UnpaidRow
+                    key={o.id}
+                    order={o}
+                    timeLabel={since(o.created_at, now)}
+                    accent="today"
+                    open={
+                      openTarget?.kind === "order" && openTarget.id === o.id
+                    }
+                    onToggle={() =>
+                      setOpenTarget(
                         openTarget?.kind === "order" && openTarget.id === o.id
-                          ? "border-primary bg-primary/[0.06]"
-                          : "border-secondary/50 bg-secondary/[0.1] hover:border-primary"
-                      }`}
-                    >
-                      <span className="rounded-[7px] bg-primary px-2.5 py-1.5 text-[11px] font-extrabold text-surface">
-                        {sourceLabel(o.source)}
-                      </span>
-                      <span className="text-[11px] font-bold text-muted">
-                        {tokenOf(o)}
-                      </span>
-                      <span className="text-[12px] font-semibold text-ink">
-                        {since(o.created_at, now)}
-                      </span>
-                      <span className="ml-auto text-[13px] font-extrabold text-ink">
-                        {money(orderLineTotal(o))}
-                      </span>
-                    </button>
-                    {openTarget?.kind === "order" && openTarget.id === o.id && (
-                      <BillPanel
-                        target={{ kind: "order", order: o }}
-                        onSettled={() => setOpenTarget(null)}
-                        onItemAdded={appendItem}
-                        onItemRemoved={removeItem}
-                        onError={setError}
-                      />
-                    )}
-                  </div>
+                          ? null
+                          : { kind: "order", id: o.id },
+                      )
+                    }
+                    onSettled={() => setOpenTarget(null)}
+                    onItemAdded={appendItem}
+                    onItemRemoved={removeItem}
+                    onError={setError}
+                  />
+                ))}
+              </section>
+            )}
+
+            {staleToShow.length > 0 && (
+              <section className="flex flex-col gap-2.5">
+                <SectionTitle>Stale — from earlier days</SectionTitle>
+                {staleToShow.map((o) => (
+                  <UnpaidRow
+                    key={o.id}
+                    order={o}
+                    timeLabel={staleDateLabel(o.created_at)}
+                    accent="stale"
+                    open={
+                      openTarget?.kind === "order" && openTarget.id === o.id
+                    }
+                    onToggle={() =>
+                      setOpenTarget(
+                        openTarget?.kind === "order" && openTarget.id === o.id
+                          ? null
+                          : { kind: "order", id: o.id },
+                      )
+                    }
+                    onSettled={() => setOpenTarget(null)}
+                    onItemAdded={appendItem}
+                    onItemRemoved={removeItem}
+                    onError={setError}
+                  />
                 ))}
               </section>
             )}
@@ -478,6 +543,66 @@ function TableBillTile({
   );
 }
 
+/** One unpaid, non-table order — parcel/walk-in today, or anything stale
+ *  from an earlier day. Shared row shape; only the time label and accent
+ *  color differ, so today's list and the stale list don't duplicate this. */
+function UnpaidRow({
+  order,
+  timeLabel,
+  accent,
+  open,
+  onToggle,
+  onSettled,
+  onItemAdded,
+  onItemRemoved,
+  onError,
+}: {
+  order: OrderWithItems;
+  timeLabel: string;
+  accent: "today" | "stale";
+  open: boolean;
+  onToggle: () => void;
+  onSettled: () => void;
+  onItemAdded: (orderId: string, item: OrderItemRow) => void;
+  onItemRemoved: (orderId: string, itemRowId: string) => void;
+  onError: (m: string) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <button
+        onClick={onToggle}
+        className={`flex flex-wrap items-center gap-2.5 rounded-xl border p-3 text-left transition ${
+          open
+            ? "border-primary bg-primary/[0.06]"
+            : accent === "stale"
+              ? "border-non-veg/40 bg-non-veg/[0.06] hover:border-primary"
+              : "border-secondary/50 bg-secondary/[0.1] hover:border-primary"
+        }`}
+      >
+        <span className="rounded-[7px] bg-primary px-2.5 py-1.5 text-[11px] font-extrabold text-surface">
+          {sourceLabel(order.source)}
+        </span>
+        <span className="text-[11px] font-bold text-muted">
+          {tokenOf(order)}
+        </span>
+        <span className="text-[12px] font-semibold text-ink">{timeLabel}</span>
+        <span className="ml-auto text-[13px] font-extrabold text-ink">
+          {money(orderLineTotal(order))}
+        </span>
+      </button>
+      {open && (
+        <BillPanel
+          target={{ kind: "order", order }}
+          onSettled={onSettled}
+          onItemAdded={onItemAdded}
+          onItemRemoved={onItemRemoved}
+          onError={onError}
+        />
+      )}
+    </div>
+  );
+}
+
 type BillTarget =
   { kind: "table"; bill: TableBill } | { kind: "order"; order: OrderWithItems };
 
@@ -506,7 +631,9 @@ function BillPanel({
   // so removal needs to target exactly one of them, which combinedLines()
   // deliberately throws away in favor of a readable qty-per-name summary.
   const bottleRows = orders.flatMap((o) =>
-    o.order_items.filter((it) => isCounterItemName(it.item_name)).map((it) => ({ orderId: o.id, item: it })),
+    o.order_items
+      .filter((it) => isCounterItemName(it.item_name))
+      .map((it) => ({ orderId: o.id, item: it })),
   );
   const total =
     target.kind === "table" ? target.bill.total : orderLineTotal(target.order);
@@ -583,7 +710,9 @@ function BillPanel({
 
       {bottleRows.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 border-t border-dashed border-ink/[0.14] pt-2.5">
-          <span className="text-[10.5px] font-bold tracking-[.1em] text-muted">REMOVE</span>
+          <span className="text-[10.5px] font-bold tracking-[.1em] text-muted">
+            REMOVE
+          </span>
           {bottleRows.map(({ orderId, item }) => (
             <button
               key={item.id}
