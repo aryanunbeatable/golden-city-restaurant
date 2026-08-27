@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Menu, MenuItem, MenuVariant } from "@/types/menu";
-import { cartTotals, decorateItem, lineKey, money, type CartLine } from "@/lib/cart";
+import { cartTotals, decorateItem, lineKey, money, type CartLine, type DecoratedItem } from "@/lib/cart";
+import type { PopularEntry } from "@/lib/popular";
 import { ItemCard } from "./ItemCard";
 import { ItemModal } from "./ItemModal";
 
@@ -17,10 +18,53 @@ export interface MenuBrowserProps {
   onBumpItem: (key: string, delta: number) => void;
   /** Tap handler for the customer floating cart bar. No-op if omitted. */
   onOpenCart?: () => void;
+  /** Ranked dishes from order history — empty until enough of it exists (see
+   *  lib/popular.ts). Manager gets a pinned strip, customers a section. */
+  popular?: PopularEntry[];
   className?: string;
 }
 
 const WIDE_QUERY = "(min-width: 768px)";
+
+/** Synthetic category id for the customer "Popular" section. Not a real
+ *  category in menu.json — it only exists in this component's rendering, so it
+ *  must not collide with a real category id. */
+const POPULAR_CAT_ID = "__popular";
+
+/**
+ * Decorate one ranked dish as the specific variant that earned its slot.
+ *
+ * decorateItem() can't do this: it decorates a whole MenuItem, so anything with
+ * variants comes back as "Choose" and costs a modal — the exact friction this
+ * exists to remove. Here the variant is already known, so the tile behaves like
+ * a variant-less item: one tap adds, and its quantity reads from the same cart
+ * line key the dish's normal card writes to, which is what keeps the two copies
+ * of a dish agreeing about their count.
+ */
+function decoratePopular(entry: PopularEntry, qtyByLineKey: Map<string, number>): DecoratedItem {
+  const { item, variant } = entry;
+  const price = variant ? variant.price : item.price!;
+  const veg = variant ? variant.veg : !!item.veg;
+  const qty = qtyByLineKey.get(lineKey(item.id, variant?.name ?? null)) ?? 0;
+  return {
+    raw: item,
+    id: item.id,
+    name: variant ? `${item.name} (${variant.name})` : item.name,
+    description: item.description,
+    hasDesc: !!item.description,
+    priceLabel: money(price),
+    prepLabel: `${item.prepTimeMinutes} min`,
+    isVeg: veg,
+    isNonVeg: !veg,
+    // Deliberately false even when the dish has variants — this tile IS one
+    // variant, and saying otherwise would restore the chooser.
+    hasVariants: false,
+    variantHint: "",
+    qty,
+    hasQty: qty > 0,
+    addLabel: qty > 0 ? `Add · ${qty}` : "Add",
+  };
+}
 
 // useSyncExternalStore rather than an effect: matchMedia is exactly the
 // external store it's for, and it avoids a setState-in-effect on first paint.
@@ -48,10 +92,18 @@ export function MenuBrowser({
   onAddItem,
   onBumpItem,
   onOpenCart,
+  popular = [],
   className = "",
 }: MenuBrowserProps) {
   const [activeItem, setActiveItem] = useState<MenuItem | null>(null);
-  const [activeCat, setActiveCat] = useState(menu.categories[0]?.id ?? "");
+  // Customers get "Popular" as a real section with its own nav chip; the
+  // manager gets a pinned strip instead, which never scrolls and so never
+  // takes part in scroll-sync.
+  const showPopularSection = density === "customer" && popular.length > 0;
+  const showPopularStrip = density === "manager" && popular.length > 0;
+  const [activeCat, setActiveCat] = useState(
+    showPopularSection ? POPULAR_CAT_ID : (menu.categories[0]?.id ?? ""),
+  );
 
   const listRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
@@ -91,7 +143,7 @@ export function MenuBrowser({
   // for 900ms so the smooth-scroll it triggers doesn't fight the scroll
   // handler over which tab should be active mid-animation.
   function jumpToCategory(id: string) {
-    // eslint-disable-next-line react-hooks/purity -- event handler only (onClick), never called during render
+    // Event handler only (onClick) — never called during render.
     lockUntil.current = Date.now() + 900;
     setActiveCat(id);
     const el = sectionRefs.current[id];
@@ -105,7 +157,7 @@ export function MenuBrowser({
   // offset (bar.bottom vs the list's top), then walks categories in order
   // and keeps the last one whose section has scrolled past that line.
   function syncFromScroll() {
-    // eslint-disable-next-line react-hooks/purity -- event handler only (onScroll via rAF), never called during render
+    // Event handler only (onScroll via rAF) — never called during render.
     if (Date.now() < lockUntil.current) return;
     const sc = listRef.current;
     if (!sc) return;
@@ -113,15 +165,19 @@ export function MenuBrowser({
     const scTop = sc.getBoundingClientRect().top;
     const overlap = bar ? Math.max(0, bar.getBoundingClientRect().bottom - scTop) : 0;
     const line = scTop + overlap + 14;
-    const cats = menu.categories;
-    let pick = cats[0]?.id ?? "";
+    // Includes the synthetic Popular section, or scrolling through it would
+    // leave no chip highlighted — the one section you couldn't navigate back to.
+    const ids = showPopularSection
+      ? [POPULAR_CAT_ID, ...menu.categories.map((c) => c.id)]
+      : menu.categories.map((c) => c.id);
+    let pick = ids[0] ?? "";
     if (sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 2) {
-      pick = cats[cats.length - 1].id;
+      pick = ids[ids.length - 1];
     } else {
-      for (const c of cats) {
-        const el = sectionRefs.current[c.id];
+      for (const id of ids) {
+        const el = sectionRefs.current[id];
         if (!el) continue;
-        if (el.getBoundingClientRect().top - line <= 1) pick = c.id;
+        if (el.getBoundingClientRect().top - line <= 1) pick = id;
         else break;
       }
     }
@@ -148,6 +204,10 @@ export function MenuBrowser({
       })),
     [menu, qtyByLineKey],
   );
+  const decoratedPopular = useMemo(
+    () => popular.map((entry) => ({ entry, card: decoratePopular(entry, qtyByLineKey) })),
+    [popular, qtyByLineKey],
+  );
   const totals = cartTotals(cart);
 
   return (
@@ -160,6 +220,21 @@ export function MenuBrowser({
             : "flex w-full flex-none gap-1.5 overflow-x-auto border-b border-ink/10 bg-surface p-2 md:w-[196px] md:flex-col md:gap-0.5 md:overflow-x-visible md:overflow-y-auto md:border-r md:border-b-0"
         }
       >
+        {showPopularSection && (
+          <button
+            ref={(el) => {
+              tabRefs.current[POPULAR_CAT_ID] = el;
+            }}
+            onClick={() => jumpToCategory(POPULAR_CAT_ID)}
+            className={
+              POPULAR_CAT_ID === activeCat
+                ? "flex-none whitespace-nowrap rounded-full bg-primary px-[13px] py-2 text-[11.5px] font-bold text-surface"
+                : "flex-none whitespace-nowrap rounded-full border border-ink/[0.14] bg-surface px-[13px] py-2 text-[11.5px] font-semibold text-ink transition hover:border-primary hover:text-primary"
+            }
+          >
+            Popular
+          </button>
+        )}
         {decoratedCategories.map((cat) => {
           const isActive = cat.id === activeCat;
           return (
@@ -190,6 +265,41 @@ export function MenuBrowser({
         })}
       </div>
 
+      {/* `contents` when there's no strip, so the scrolling list stays a direct
+          flex child of the wrapper exactly as before. With a strip, this becomes
+          the manager's content column: strip pinned on top, list beneath. */}
+      <div className={showPopularStrip ? "flex min-w-0 flex-1 flex-col" : "contents"}>
+        {/* Manager only, and pinned rather than scrolled: a section at the top of
+            the list would speed up the first dish of an order and nothing after
+            it, since browsing to Tandoor scrolls it away. It lives inside
+            MenuBrowser so it stays hidden until an order source is picked —
+            adding a dish before that is a dead end. */}
+        {showPopularStrip && (
+          <div className="flex flex-none items-center gap-2 border-b border-ink/10 bg-secondary/[0.07] px-3.5 py-2.5">
+            <span className="flex-none text-[10px] font-bold tracking-[.14em] text-muted">
+              MOST ORDERED
+            </span>
+            <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto">
+              {decoratedPopular.map(({ entry, card }) => (
+                <div key={card.id} className="w-[232px] flex-none">
+                  {/* A ranked tile IS one specific variant, so every tap has to
+                      carry that variant through — otherwise "Paneer 65 (Half)"
+                      would add a bare Paneer 65 and disagree with the card for
+                      the same dish further down the list. */}
+                  <ItemCard
+                    item={card}
+                    density="manager"
+                    onOpen={() => setActiveItem(entry.item)}
+                    onAdd={() => onAddItem(entry.item, entry.variant, 1)}
+                    onInc={() => onAddItem(entry.item, entry.variant, 1)}
+                    onDec={() => onBumpItem(lineKey(entry.item.id, entry.variant?.name ?? null), -1)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
       <div
         ref={listRef}
         onScroll={handleScroll}
@@ -200,6 +310,33 @@ export function MenuBrowser({
               "relative min-h-0 flex-1 overflow-y-auto p-3.5 pb-24 md:pb-3.5"
         }
       >
+        {showPopularSection && (
+          <div
+            ref={(el) => {
+              sectionRefs.current[POPULAR_CAT_ID] = el;
+            }}
+            className="pt-5"
+          >
+            <div className="flex items-baseline gap-[9px] px-0.5 pb-3">
+              <span className="font-display text-[19px] text-primary">Popular</span>
+              <span className="h-px flex-1 bg-primary/[0.18]" />
+              <span className="text-[10px] font-semibold text-muted">most ordered here</span>
+            </div>
+            <div className="flex flex-col gap-[11px]">
+              {decoratedPopular.map(({ entry, card }) => (
+                <ItemCard
+                  key={card.id}
+                  item={card}
+                  density="customer"
+                  onOpen={() => setActiveItem(entry.item)}
+                  onAdd={() => onAddItem(entry.item, entry.variant, 1)}
+                  onInc={() => onAddItem(entry.item, entry.variant, 1)}
+                  onDec={() => onBumpItem(lineKey(entry.item.id, entry.variant?.name ?? null), -1)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
         {decoratedCategories.map((cat) => (
           <div
             key={cat.id}
@@ -236,6 +373,7 @@ export function MenuBrowser({
             </div>
           </div>
         ))}
+      </div>
       </div>
 
       {density === "customer" && totals.count > 0 && (

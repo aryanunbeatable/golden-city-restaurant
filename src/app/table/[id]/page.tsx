@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { isTableId, type TableId } from "@/lib/table";
 import { ActiveTableSync } from "@/components/customer/ActiveTableSync";
 import { TableOrderingScreen } from "@/components/customer/TableOrderingScreen";
+import { getPopularEntries } from "@/lib/popular-server";
 import menu from "@/data/menu.json";
 import type { Menu } from "@/types/menu";
 
@@ -27,7 +28,7 @@ export default async function TablePage({ params }: PageProps<"/table/[id]">) {
           </span>
         </div>
       </div>
-      <TableOrderingScreen tableId={tableId} menu={menu as Menu} />
+      <TableOrderingScreen tableId={tableId} menu={menu as Menu} popular={await getPopularEntries()} />
     </main>
   );
 }

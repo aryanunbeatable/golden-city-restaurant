@@ -3,13 +3,22 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Menu } from "@/types/menu";
+import type { PopularEntry } from "@/lib/popular";
 import type { TableId } from "@/lib/table";
 import { useCart } from "@/lib/cart";
 import { placeOrder } from "@/lib/orders";
 import { MenuBrowser } from "@/components/menu/MenuBrowser";
 import { CartSheet } from "@/components/menu/CartSheet";
 
-export function TableOrderingScreen({ tableId, menu }: { tableId: TableId; menu: Menu }) {
+export function TableOrderingScreen({
+  tableId,
+  menu,
+  popular = [],
+}: {
+  tableId: TableId;
+  menu: Menu;
+  popular?: PopularEntry[];
+}) {
   const router = useRouter();
   const cart = useCart();
   const [cartOpen, setCartOpen] = useState(false);
@@ -46,6 +55,7 @@ export function TableOrderingScreen({ tableId, menu }: { tableId: TableId; menu:
         onAddItem={cart.addItem}
         onBumpItem={cart.bumpItem}
         onOpenCart={() => setCartOpen(true)}
+        popular={popular}
       />
       {cartOpen && (
         <CartSheet

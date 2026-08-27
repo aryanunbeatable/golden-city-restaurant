@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 import type { Menu } from "@/types/menu";
+import type { PopularEntry } from "@/lib/popular";
 import { MAX_PARTY_SIZE, type OrderServiceType } from "@/types/order";
 import { useCart, money } from "@/lib/cart";
 import { normalizeName, normalizePhone } from "@/lib/phone";
@@ -32,7 +33,7 @@ declare global {
 /** Prefill only — with OTP off this identifies nobody, it just saves typing. */
 const CONTACT_KEY = "gc:phone-contact";
 
-export function PhoneOrderFlow({ menu }: { menu: Menu }) {
+export function PhoneOrderFlow({ menu, popular = [] }: { menu: Menu; popular?: PopularEntry[] }) {
   const router = useRouter();
   const cart = useCart();
 
@@ -236,6 +237,7 @@ export function PhoneOrderFlow({ menu }: { menu: Menu }) {
             onAddItem={cart.addItem}
             onBumpItem={cart.bumpItem}
             onOpenCart={() => setCartOpen(true)}
+            popular={popular}
           />
         </main>
       )}

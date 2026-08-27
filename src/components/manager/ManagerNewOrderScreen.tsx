@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { Menu } from "@/types/menu";
+import type { PopularEntry } from "@/lib/popular";
 import {
   COUNTER_SOURCE_OPTIONS,
   ORDER_SOURCE_OPTIONS,
@@ -21,7 +22,13 @@ import { ManagerNav } from "@/components/manager/ManagerNav";
 // one tab switcher within a single screen; here they're two routes
 // (/manager/new-order, /manager/orders) with a plain link between them
 // instead of shared tab state.
-export function ManagerNewOrderScreen({ menu }: { menu: Menu }) {
+export function ManagerNewOrderScreen({
+  menu,
+  popular = [],
+}: {
+  menu: Menu;
+  popular?: PopularEntry[];
+}) {
   const [source, setSource] = useState<OrderSource | null>(null);
   const cart = useCart();
   const [sentOrderId, setSentOrderId] = useState<string | null>(null);
@@ -118,6 +125,7 @@ export function ManagerNewOrderScreen({ menu }: { menu: Menu }) {
               cart={cart.lines}
               onAddItem={cart.addItem}
               onBumpItem={cart.bumpItem}
+              popular={popular}
             />
           )}
         </div>
