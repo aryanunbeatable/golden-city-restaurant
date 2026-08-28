@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import type { MenuItem, MenuVariant } from "@/types/menu";
 import { money } from "@/lib/cart";
 import { PHOTO_PLACEHOLDER_LG, VegDot } from "./ItemCard";
@@ -23,17 +24,27 @@ export function ItemModal({ item, density, onClose, onAdd }: ItemModalProps) {
   const isVeg = item.variants ? item.variants.some((v) => v.veg) : !!item.veg;
   const isNonVeg = item.variants ? item.variants.some((v) => !v.veg) : !item.veg;
 
+  const hasPhoto = item.photo && item.photo !== "placeholder";
+
   const content = (
     <>
       <div
-        className="h-28 flex-none rounded-2xl border border-ink/[0.08]"
-        style={{ backgroundImage: PHOTO_PLACEHOLDER_LG }}
+        // aspect-square, not the old fixed h-28: photos are shot 1:1, and a
+        // fixed short height on a full-width box made object-cover crop the
+        // top and bottom off every dish (h-28 on a ~340px sheet is a ~3:1
+        // banner, not a square).
+        className="relative aspect-square flex-none overflow-hidden rounded-2xl border border-ink/[0.08]"
+        style={hasPhoto ? undefined : { backgroundImage: PHOTO_PLACEHOLDER_LG }}
       >
-        <div className="flex h-full items-center justify-center text-center font-mono text-[9px] leading-[1.5] tracking-[.06em] text-muted">
-          DISH PHOTO
-          <br />
-          COMING SOON
-        </div>
+        {hasPhoto ? (
+          <Image src={item.photo} alt={item.name} fill sizes="(min-width: 768px) 420px, 100vw" className="object-cover" />
+        ) : (
+          <div className="flex h-full items-center justify-center text-center font-mono text-[9px] leading-[1.5] tracking-[.06em] text-muted">
+            DISH PHOTO
+            <br />
+            COMING SOON
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-2">

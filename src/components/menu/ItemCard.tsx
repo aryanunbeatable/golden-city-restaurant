@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { DecoratedItem } from "@/lib/cart";
 
 // No dish photos exist yet (menu.json: every item is "photo": "placeholder") —
@@ -100,20 +101,26 @@ export function ItemCard({ item, density, onOpen, onAdd, onInc, onDec }: ItemCar
     );
   }
 
+  const hasPhoto = item.raw.photo && item.raw.photo !== "placeholder";
+
   return (
     <div className="flex gap-3 rounded-2xl border border-ink/[0.09] bg-surface p-3 shadow-[0_1px_3px_rgba(42,27,18,0.05)]">
       <button
         onClick={onOpen}
-        className="flex h-20 w-20 flex-none items-center justify-center overflow-hidden rounded-xl border border-ink/[0.08]"
-        style={{ backgroundImage: PHOTO_PLACEHOLDER_SM }}
+        className="relative flex h-20 w-20 flex-none items-center justify-center overflow-hidden rounded-xl border border-ink/[0.08]"
+        style={hasPhoto ? undefined : { backgroundImage: PHOTO_PLACEHOLDER_SM }}
       >
-        <span className="text-center font-mono text-[7px] leading-[1.4] tracking-[.04em] text-muted">
-          PHOTO
-          <br />
-          COMING
-          <br />
-          SOON
-        </span>
+        {hasPhoto ? (
+          <Image src={item.raw.photo} alt={item.name} fill sizes="80px" className="object-cover" />
+        ) : (
+          <span className="text-center font-mono text-[7px] leading-[1.4] tracking-[.04em] text-muted">
+            PHOTO
+            <br />
+            COMING
+            <br />
+            SOON
+          </span>
+        )}
       </button>
       <div className="flex min-w-0 flex-1 flex-col gap-[5px]">
         <div className="flex items-center gap-1.5">

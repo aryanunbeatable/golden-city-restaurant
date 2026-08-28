@@ -13,7 +13,7 @@
     "note": "Full menu digitized per client request (~153 items across 15 categories) — supersedes the earlier curated-subset pass.",
     "prepTimeNote": "prepTimeMinutes values are category-level estimates set to the higher end of a reasonable range per client request (no real kitchen data supplied yet) — flag for correction before go-live.",
     "priceSource": "All prices transcribed directly and legibly from client-supplied menu text; none unconfirmed.",
-    "photoSource": "No dish photos supplied — every item uses the 'placeholder' photo state.",
+    "photoSource": "5 of 155 items have real studio photos in public/menu/ (see Menu images/PHOTO-GUIDE.md for the pipeline); the rest still use the 'placeholder' photo state.",
     "orderTypes": [
       "Table 1",
       "Table 2",
@@ -448,7 +448,7 @@
             }
           ],
           "prepTimeMinutes": 18,
-          "photo": "placeholder",
+          "photo": "/menu/crispy-potato-honey-chilli.jpg",
           "nameHi": "क्रिस्पी पोटैटो हनी चिल्ली"
         },
         {
@@ -1123,7 +1123,7 @@
           "price": 149,
           "veg": true,
           "prepTimeMinutes": 18,
-          "photo": "placeholder",
+          "photo": "/menu/golden-mini-veg-thali.jpg",
           "nameHi": "गोल्डन मिनी वेज थाली"
         },
         {
@@ -1133,7 +1133,7 @@
           "price": 199,
           "veg": false,
           "prepTimeMinutes": 18,
-          "photo": "placeholder",
+          "photo": "/menu/golden-chicken-thali.jpg",
           "nameHi": "गोल्डन चिकन थाली"
         },
         {
@@ -2394,7 +2394,7 @@
           "price": 19,
           "veg": true,
           "prepTimeMinutes": 8,
-          "photo": "placeholder",
+          "photo": "/menu/tandoori-roti.jpg",
           "nameHi": "तंदूरी रोटी"
         },
         {
@@ -2706,7 +2706,7 @@
             }
           ],
           "prepTimeMinutes": 20,
-          "photo": "placeholder",
+          "photo": "/menu/chicken-dum-biryani.jpg",
           "nameHi": "चिकन दम बिरयानी"
         },
         {
