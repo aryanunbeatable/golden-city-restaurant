@@ -133,7 +133,12 @@ export function ItemModal({ item, density, onClose, onAdd }: ItemModalProps) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col justify-end bg-ink/45">
         <div onClick={onClose} className="flex-1 cursor-pointer" />
-        <div className="animate-gc-sheet flex max-h-[86%] flex-col gap-3.5 overflow-y-auto rounded-t-[26px] rounded-b-[34px] bg-background p-4 pb-5">
+        {/* Centred and capped, same reasoning and value as CartSheet: the
+            sheet is `fixed`, so it escapes the order flow's centred column
+            and would otherwise span a whole desktop screen — square photo
+            included, which is what made this visible. No-op below 448px,
+            which is every phone. */}
+        <div className="animate-gc-sheet mx-auto flex max-h-[86%] w-full max-w-md flex-col gap-3.5 overflow-y-auto rounded-t-[26px] rounded-b-[34px] bg-background p-4 pb-5">
           {content}
         </div>
       </div>
