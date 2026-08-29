@@ -305,7 +305,7 @@ export function KitchenBoard() {
     <main className="flex h-dvh flex-col overflow-hidden">
       <div className="flex min-h-[54px] flex-none flex-wrap items-center gap-x-4 gap-y-1.5 bg-tertiary px-3.5 py-2 text-surface md:flex-nowrap md:px-[18px] md:py-0">
         <span className="font-display text-[17px]">Kitchen Pass</span>
-        <span className="hidden text-[10px] font-bold tracking-[.14em] text-secondary lg:inline">
+        <span className="hidden text-[11px] font-bold tracking-[.14em] text-secondary lg:inline">
           LIVE ORDER BOARD
         </span>
         <div className="flex gap-[3px] rounded-[9px] bg-black/26 p-[3px]">
@@ -323,8 +323,8 @@ export function KitchenBoard() {
             </button>
           ))}
         </div>
-        <LiveClock className="ml-auto text-[11px] font-semibold text-surface/75" />
-        <span className="text-[11.5px] font-semibold text-surface/75">
+        <LiveClock className="ml-auto text-[12px] font-semibold text-surface/75" />
+        <span className="text-[12px] font-semibold text-surface/75">
           {counts.new} new · {counts.cooking} cooking · {counts.ready} at the pass
         </span>
         {hasUnconfirmed ? (
@@ -386,13 +386,13 @@ export function KitchenBoard() {
                 <div className="sticky top-0 z-10 flex flex-none items-center gap-[9px] border-b border-ink/10 bg-surface px-3.5 py-[11px] md:static">
                   <span className={`h-[9px] w-[9px] rounded-full ${col.dotClassName}`} />
                   <span className="text-[12.5px] font-extrabold tracking-[.06em] text-ink">{col.title}</span>
-                  <span className="rounded-full bg-ink/[0.07] px-2 py-[5px] text-[10.5px] font-bold text-muted">
+                  <span className="rounded-full bg-ink/[0.07] px-2 py-[5px] text-[11px] font-bold text-muted">
                     {colOrders.length}
                   </span>
                 </div>
                 <div className="flex flex-col gap-[9px] p-2.5 md:min-h-0 md:flex-1 md:overflow-y-auto">
                   {colOrders.length === 0 && (
-                    <span className="px-1 py-3 text-[11.5px] leading-[1.6] text-muted">{col.emptyText}</span>
+                    <span className="px-1 py-3 text-[12px] leading-[1.6] text-muted">{col.emptyText}</span>
                   )}
                   {colOrders.map((o) => (
                     <OrderCard
@@ -459,8 +459,8 @@ function OrderCard({
         >
           {sourceLabel(order.source)}
         </span>
-        <span className="text-[10px] font-bold tracking-[.08em] text-muted">{order.id.slice(0, 8).toUpperCase()}</span>
-        <span className="ml-auto text-[10.5px] font-semibold text-muted">{since(order.created_at, now)}</span>
+        <span className="text-[11px] font-bold tracking-[.08em] text-muted">{order.id.slice(0, 8).toUpperCase()}</span>
+        <span className="ml-auto text-[11px] font-semibold text-muted">{since(order.created_at, now)}</span>
       </div>
 
       {scheduled !== null && (
@@ -469,11 +469,11 @@ function OrderCard({
             late ? "bg-non-veg/[0.12]" : dueSoon ? "bg-secondary/[0.2]" : "bg-ink/[0.05]"
           }`}
         >
-          <span className="text-[10px] font-bold tracking-[.1em] text-muted">READY BY</span>
+          <span className="text-[11px] font-bold tracking-[.1em] text-muted">READY BY</span>
           <span className={`text-[15px] font-extrabold ${late ? "text-non-veg" : "text-ink"}`}>
             {clockLabel(scheduled)}
           </span>
-          <span className="ml-auto text-[10.5px] font-bold text-muted">
+          <span className="ml-auto text-[11px] font-bold text-muted">
             {late ? "START NOW" : upcoming ? `starts ${untilLabel(Math.max(0, start! - now))}` : "on the fire"}
           </span>
         </div>
@@ -501,12 +501,12 @@ function OrderCard({
 
       <div className="flex items-center gap-2 pt-0.5">
         {(isNew || isDone || upcoming) && (
-          <span className="rounded-full border border-secondary/40 bg-secondary/[0.16] px-2 py-1.5 text-[10px] font-bold text-[#8B6C08]">
+          <span className="rounded-full border border-secondary/40 bg-secondary/[0.16] px-2 py-1.5 text-[11px] font-bold text-[#8B6C08]">
             {isDone ? "Ready to serve" : `${order.estimated_prep_minutes} min prep`}
           </span>
         )}
         {isCooking && !upcoming && (
-          <span className="rounded-full bg-tertiary px-2 py-1.5 text-[10.5px] font-extrabold text-surface tabular-nums">
+          <span className="rounded-full bg-tertiary px-2 py-1.5 text-[11px] font-extrabold text-surface tabular-nums">
             {timeLeftLabel(order, now)}
           </span>
         )}

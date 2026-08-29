@@ -11,7 +11,7 @@ export default function TableSelector() {
   return (
     <main className="flex min-h-screen flex-col gap-[26px] px-6 pt-[34px] pb-7">
       <div className="flex flex-col items-center gap-2 text-center">
-        <span className="text-[9px] font-semibold tracking-[.24em] text-muted">
+        <span className="text-[11px] font-semibold tracking-[.24em] text-muted">
           SCAN COMPLETE · WELCOME TO
         </span>
         <span className="font-display text-[30px] leading-[1.1] text-primary">
@@ -41,7 +41,7 @@ export default function TableSelector() {
               {n}
             </span>
             <span className="text-[13px] font-bold text-ink">Table {n}</span>
-            <span className="text-[10px] font-medium text-muted">Ready to order</span>
+            <span className="text-[11px] font-medium text-muted">Ready to order</span>
           </Link>
         ))}
       </div>

@@ -71,7 +71,7 @@ export function CartSheet({
               <VegDot veg={l.veg} />
               <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
                 <span className="text-[12.5px] font-bold text-ink">{l.name}</span>
-                <span className="text-[10.5px] font-semibold text-muted">
+                <span className="text-[11px] font-semibold text-muted">
                   {l.variantName ? `${l.variantName} · ` : ""}
                   {money(l.price)} each · {l.prepTimeMinutes} min
                 </span>
@@ -111,7 +111,7 @@ export function CartSheet({
               {totals.prepMinutes} min
             </span>
           </div>
-          <span className="text-[10.5px] leading-[1.5] text-muted">{note}</span>
+          <span className="text-[11px] leading-[1.5] text-muted">{note}</span>
         </div>
 
         {error && <p className="text-center text-[12px] font-semibold text-non-veg">{error}</p>}

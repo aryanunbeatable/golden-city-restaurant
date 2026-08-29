@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { isTableId, type TableId } from "@/lib/table";
 import { ActiveTableSync } from "@/components/customer/ActiveTableSync";
 import { TableOrderingScreen } from "@/components/customer/TableOrderingScreen";
-import { getPopularEntries } from "@/lib/popular-server";
+import { getLeastOrderedCategoryId, getPopularEntries } from "@/lib/popular-server";
 import menu from "@/data/menu.json";
 import type { Menu } from "@/types/menu";
 
@@ -13,6 +13,10 @@ export default async function TablePage({ params }: PageProps<"/table/[id]">) {
   const { id } = await params;
   if (!isTableId(id)) notFound();
   const tableId = Number(id) as TableId;
+  const [popular, leastOrderedCategoryId] = await Promise.all([
+    getPopularEntries(),
+    getLeastOrderedCategoryId(),
+  ]);
 
   return (
     <main className="flex h-screen flex-col overflow-hidden">
@@ -23,12 +27,17 @@ export default async function TablePage({ params }: PageProps<"/table/[id]">) {
         </Link>
         <div className="flex flex-col gap-0.5">
           <span className="font-display text-base text-primary">Golden City Restaurant</span>
-          <span className="text-[10px] font-semibold tracking-[.06em] text-muted">
+          <span className="text-[11px] font-semibold tracking-[.06em] text-muted">
             TABLE {tableId} · DINE-IN
           </span>
         </div>
       </div>
-      <TableOrderingScreen tableId={tableId} menu={menu as Menu} popular={await getPopularEntries()} />
+      <TableOrderingScreen
+        tableId={tableId}
+        menu={menu as Menu}
+        popular={popular}
+        leastOrderedCategoryId={leastOrderedCategoryId}
+      />
     </main>
   );
 }

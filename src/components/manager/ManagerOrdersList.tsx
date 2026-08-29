@@ -272,7 +272,7 @@ export function ManagerOrdersList() {
   return (
     <main className="flex h-dvh flex-col overflow-hidden">
       <ManagerNav active="orders">
-        <LiveClock className="text-[11px] font-semibold text-muted" />
+        <LiveClock className="text-[12px] font-semibold text-muted" />
       </ManagerNav>
 
       <div className="flex flex-none flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-ink/10 px-4 py-2.5 md:px-6">
@@ -285,7 +285,7 @@ export function ManagerOrdersList() {
         <Stat n={atPass} label="at the pass" tone="calm" />
         <span className="ml-auto text-[12px] font-extrabold text-ink">
           {money(takings)}
-          <span className="pl-1 text-[10.5px] font-semibold text-muted">
+          <span className="pl-1 text-[11px] font-semibold text-muted">
             taken today
           </span>
         </span>
@@ -419,7 +419,7 @@ export function ManagerOrdersList() {
             <section className="flex flex-col gap-2.5">
               <button
                 onClick={() => setShowCompleted(!showCompleted)}
-                className="flex items-center gap-2 self-start text-[11px] font-bold tracking-[.12em] text-muted transition hover:text-ink"
+                className="flex items-center gap-2 self-start text-[11px] font-bold tracking-[.04em] text-muted transition hover:text-ink"
               >
                 {completed.length} COMPLETED TODAY
                 <span className="text-[13px]">{showCompleted ? "▾" : "▸"}</span>
@@ -444,7 +444,7 @@ export function ManagerOrdersList() {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <span className="text-[11px] font-bold tracking-[.12em] text-muted">
+    <span className="text-[12px] font-bold tracking-[.04em] text-muted">
       {children}
     </span>
   );
@@ -466,7 +466,7 @@ function Stat({
       >
         {n}
       </span>
-      <span className="text-[10.5px] font-semibold text-muted">{label}</span>
+      <span className="text-[11px] font-semibold text-muted">{label}</span>
     </span>
   );
 }
@@ -527,7 +527,7 @@ function TableTile({
       ) : (
         <>
           <span
-            className={`rounded-full px-2 py-1 text-[10.5px] font-bold ${status!.className}`}
+            className={`rounded-full px-2 py-1 text-[11px] font-bold ${status!.className}`}
           >
             {status!.label}
           </span>
@@ -535,7 +535,7 @@ function TableTile({
             {itemCount(order.order_items)} items ·{" "}
             {money(orderTotal(order.order_items))}
           </span>
-          <span className="text-[10px] font-semibold text-muted">
+          <span className="text-[11px] font-semibold text-muted">
             {since(order.created_at, now)}
           </span>
         </>
@@ -594,7 +594,7 @@ function OrderRowCard({
       <div className="flex flex-wrap items-center gap-2">
         <SourceBadge order={order} />
         <span
-          className={`rounded-full px-2.5 py-1 text-[10.5px] font-bold ${status.className}`}
+          className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${status.className}`}
         >
           {status.label}
         </span>
@@ -605,7 +605,7 @@ function OrderRowCard({
         )}
         {order.scheduled_for && (
           <span
-            className={`rounded-full px-2 py-1 text-[10.5px] font-bold ${
+            className={`rounded-full px-2 py-1 text-[11px] font-bold ${
               late ? "bg-non-veg text-surface" : "bg-ink/[0.07] text-muted"
             }`}
           >
@@ -613,7 +613,7 @@ function OrderRowCard({
             by {clockLabel(new Date(order.scheduled_for).getTime())}
           </span>
         )}
-        <span className="text-[10.5px] font-semibold text-muted">
+        <span className="text-[11px] font-semibold text-muted">
           {since(order.created_at, now)}
         </span>
         <span className="ml-auto text-[13px] font-extrabold text-ink">

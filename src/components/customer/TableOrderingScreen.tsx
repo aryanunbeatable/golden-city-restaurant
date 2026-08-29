@@ -14,10 +14,12 @@ export function TableOrderingScreen({
   tableId,
   menu,
   popular = [],
+  leastOrderedCategoryId = null,
 }: {
   tableId: TableId;
   menu: Menu;
   popular?: PopularEntry[];
+  leastOrderedCategoryId?: string | null;
 }) {
   const router = useRouter();
   const cart = useCart();
@@ -56,6 +58,7 @@ export function TableOrderingScreen({
         onBumpItem={cart.bumpItem}
         onOpenCart={() => setCartOpen(true)}
         popular={popular}
+        leastOrderedCategoryId={leastOrderedCategoryId}
       />
       {cartOpen && (
         <CartSheet

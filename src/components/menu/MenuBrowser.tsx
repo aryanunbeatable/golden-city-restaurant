@@ -21,6 +21,11 @@ export interface MenuBrowserProps {
   /** Ranked dishes from order history — empty until enough of it exists (see
    *  lib/popular.ts). Manager gets a pinned strip, customers a section. */
   popular?: PopularEntry[];
+  /** The category whose nav chip "Popular" folds into, instead of adding a
+   *  new chip alongside every existing one. Content stays reachable by
+   *  scroll either way — only its dedicated quick-jump chip is freed up.
+   *  Customer density only; null before the gate opens. */
+  leastOrderedCategoryId?: string | null;
   className?: string;
 }
 
@@ -93,6 +98,7 @@ export function MenuBrowser({
   onBumpItem,
   onOpenCart,
   popular = [],
+  leastOrderedCategoryId = null,
   className = "",
 }: MenuBrowserProps) {
   const [activeItem, setActiveItem] = useState<MenuItem | null>(null);
@@ -101,6 +107,10 @@ export function MenuBrowser({
   // takes part in scroll-sync.
   const showPopularSection = density === "customer" && popular.length > 0;
   const showPopularStrip = density === "manager" && popular.length > 0;
+  // Fold Popular into the least-ordered category's chip slot rather than
+  // appending an eighth-plus chip — the section still exists below, it just
+  // loses its own dedicated shortcut.
+  const demotedCategoryId = showPopularSection ? leastOrderedCategoryId : null;
   const [activeCat, setActiveCat] = useState(
     showPopularSection ? POPULAR_CAT_ID : (menu.categories[0]?.id ?? ""),
   );
@@ -235,7 +245,9 @@ export function MenuBrowser({
             Popular
           </button>
         )}
-        {decoratedCategories.map((cat) => {
+        {decoratedCategories
+          .filter((cat) => cat.id !== demotedCategoryId)
+          .map((cat) => {
           const isActive = cat.id === activeCat;
           return (
             <button
@@ -256,7 +268,7 @@ export function MenuBrowser({
             >
               <span>{cat.name}</span>
               {density === "manager" && (
-                <span className={isActive ? "text-[10px] opacity-70" : "text-[10px] text-muted"}>
+                <span className={isActive ? "text-[11px] opacity-70" : "text-[11px] text-muted"}>
                   {cat.items.length}
                 </span>
               )}
@@ -276,7 +288,7 @@ export function MenuBrowser({
             adding a dish before that is a dead end. */}
         {showPopularStrip && (
           <div className="flex flex-none items-center gap-2 border-b border-ink/10 bg-secondary/[0.07] px-3.5 py-2.5">
-            <span className="flex-none text-[10px] font-bold tracking-[.14em] text-muted">
+            <span className="flex-none text-[11px] font-bold tracking-[.14em] text-muted">
               MOST ORDERED
             </span>
             <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto">
@@ -320,7 +332,7 @@ export function MenuBrowser({
             <div className="flex items-baseline gap-[9px] px-0.5 pb-3">
               <span className="font-display text-[19px] text-primary">Popular</span>
               <span className="h-px flex-1 bg-primary/[0.18]" />
-              <span className="text-[10px] font-semibold text-muted">most ordered here</span>
+              <span className="text-[11px] font-semibold text-muted">most ordered here</span>
             </div>
             <div className="flex flex-col gap-[11px]">
               {decoratedPopular.map(({ entry, card }) => (
@@ -349,7 +361,7 @@ export function MenuBrowser({
               <div className="flex items-baseline gap-[9px] px-0.5 pb-3">
                 <span className="font-display text-[19px] text-primary">{cat.name}</span>
                 <span className="h-px flex-1 bg-primary/[0.18]" />
-                <span className="text-[10px] font-semibold text-muted">{cat.items.length} items</span>
+                <span className="text-[11px] font-semibold text-muted">{cat.items.length} items</span>
               </div>
             ) : (
               <div className="font-display pb-3 text-xl text-primary">{cat.name}</div>

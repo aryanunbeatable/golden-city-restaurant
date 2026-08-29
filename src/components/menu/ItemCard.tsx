@@ -92,10 +92,15 @@ export function ItemCard({ item, density, onOpen, onAdd, onInc, onDec }: ItemCar
         {item.isNonVeg && <VegDot veg={false} />}
         <button onClick={onOpen} className="flex min-w-0 flex-1 flex-col gap-0.5 text-left">
           <span className="truncate text-[12.5px] font-bold text-ink">{item.name}</span>
-          <span className="text-[10.5px] font-semibold text-muted">
+          <span className="text-[11px] font-semibold text-muted">
             {item.priceLabel} · {item.prepLabel}
           </span>
         </button>
+        {item.hasVariants && item.qty > 0 && (
+          <span className="inline-flex min-w-[18px] flex-none items-center justify-center rounded-full bg-secondary px-1 py-0.5 text-[11px] font-extrabold text-ink">
+            {item.qty}
+          </span>
+        )}
         {item.hasQty ? stepper : addButton}
       </div>
     );
@@ -113,7 +118,7 @@ export function ItemCard({ item, density, onOpen, onAdd, onInc, onDec }: ItemCar
         {hasPhoto ? (
           <Image src={item.raw.photo} alt={item.name} fill sizes="80px" className="object-cover" />
         ) : (
-          <span className="text-center font-mono text-[7px] leading-[1.4] tracking-[.04em] text-muted">
+          <span className="text-center font-mono text-[11px] leading-[1.4] tracking-[.04em] text-muted">
             PHOTO
             <br />
             COMING
@@ -134,17 +139,22 @@ export function ItemCard({ item, density, onOpen, onAdd, onInc, onDec }: ItemCar
           </button>
         </div>
         {item.hasDesc && (
-          <span className="text-pretty text-[11px] leading-[1.45] text-muted">{item.description}</span>
+          <span className="text-pretty text-[12px] leading-[1.5] text-muted">{item.description}</span>
         )}
         <div className="mt-0.5 flex items-center gap-2">
           <span className="text-sm font-extrabold text-ink">{item.priceLabel}</span>
-          <span className="rounded-full border border-secondary/40 bg-secondary/[0.16] px-[7px] py-1 text-[9.5px] font-semibold text-[#8B6C08]">
+          <span className="rounded-full border border-secondary/40 bg-secondary/[0.16] px-[7px] py-1 text-[11px] font-semibold text-[#8B6C08]">
             {item.prepLabel}
           </span>
         </div>
         <div className="mt-1 flex items-center gap-2">
           {item.hasQty ? stepper : addButton}
-          {item.hasVariants && <span className="text-[10px] font-medium text-muted">{item.variantHint}</span>}
+          {item.hasVariants && item.qty > 0 && (
+            <span className="inline-flex min-w-[18px] items-center justify-center rounded-full bg-secondary px-1 py-0.5 text-[11px] font-extrabold text-ink">
+              {item.qty}
+            </span>
+          )}
+          {item.hasVariants && <span className="text-[12px] font-medium text-muted">{item.variantHint}</span>}
         </div>
       </div>
     </div>

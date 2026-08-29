@@ -39,7 +39,7 @@ export function ItemModal({ item, density, onClose, onAdd }: ItemModalProps) {
         {hasPhoto ? (
           <Image src={item.photo} alt={item.name} fill sizes="(min-width: 768px) 420px, 100vw" className="object-cover" />
         ) : (
-          <div className="flex h-full items-center justify-center text-center font-mono text-[9px] leading-[1.5] tracking-[.06em] text-muted">
+          <div className="flex h-full items-center justify-center text-center font-mono text-[11px] leading-[1.5] tracking-[.06em] text-muted">
             DISH PHOTO
             <br />
             COMING SOON
@@ -57,13 +57,13 @@ export function ItemModal({ item, density, onClose, onAdd }: ItemModalProps) {
         <span className="text-pretty text-[12.5px] leading-[1.6] text-muted">{item.description}</span>
       )}
 
-      <span className="self-start rounded-full border border-secondary/40 bg-secondary/[0.16] px-2.5 py-1.5 text-[10px] font-semibold text-[#8B6C08]">
+      <span className="self-start rounded-full border border-secondary/40 bg-secondary/[0.16] px-2.5 py-1.5 text-[11px] font-semibold text-[#8B6C08]">
         Prep {item.prepTimeMinutes} min
       </span>
 
       {item.variants && (
         <div className="flex flex-col gap-2">
-          <span className="text-[10.5px] font-bold tracking-[.12em] text-muted">CHOOSE AN OPTION</span>
+          <span className="text-[11px] font-bold tracking-[.04em] text-muted">CHOOSE AN OPTION</span>
           {item.variants.map((v, i) => {
             const selected = i === variantIndex;
             return (

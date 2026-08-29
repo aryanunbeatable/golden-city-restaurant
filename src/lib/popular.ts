@@ -121,3 +121,38 @@ export function popularEntries(
 export function windowStart(now: number): Date {
   return new Date(now - WINDOW_DAYS * 24 * 60 * 60 * 1000);
 }
+
+/**
+ * The category with the fewest resolved orders in the window.
+ *
+ * A proxy, not a measurement: this app tracks what got ORDERED, not what got
+ * tapped, so "least ordered" stands in for "least visited" because that is the
+ * only signal that actually exists. Callers should only use this once
+ * gateOpen() is true — on thin data, "least ordered" is just noise.
+ */
+export function leastOrderedCategoryId(menu: Menu, windowRows: PopularRow[]): string | null {
+  if (menu.categories.length === 0) return null;
+  const items = allItems(menu);
+  const itemToCategory = new Map<string, string>();
+  for (const cat of menu.categories) {
+    for (const it of cat.items) itemToCategory.set(it.id, cat.id);
+  }
+  const byCategory = new Map<string, number>(menu.categories.map((c) => [c.id, 0]));
+  for (const row of windowRows) {
+    const hit = resolve(items, row);
+    if (!hit) continue;
+    const catId = itemToCategory.get(hit.item.id);
+    if (!catId) continue;
+    byCategory.set(catId, (byCategory.get(catId) ?? 0) + row.order_count);
+  }
+  let leastId = menu.categories[0].id;
+  let leastCount = Infinity;
+  for (const cat of menu.categories) {
+    const count = byCategory.get(cat.id) ?? 0;
+    if (count < leastCount) {
+      leastCount = count;
+      leastId = cat.id;
+    }
+  }
+  return leastId;
+}

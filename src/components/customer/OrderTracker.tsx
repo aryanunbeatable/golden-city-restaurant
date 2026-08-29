@@ -114,7 +114,7 @@ export function OrderTracker({ tableId, orderId }: { tableId: TableId; orderId: 
     <main className="flex min-h-screen flex-col gap-[18px] px-[22px] pt-[22px] pb-[26px]">
       <div className="flex items-center justify-between">
         <span className="font-display text-[17px] text-primary">Your order</span>
-        <span className="rounded-full bg-tertiary px-2.5 py-1.5 text-[10px] font-bold tracking-[.1em] text-surface">
+        <span className="rounded-full bg-tertiary px-2.5 py-1.5 text-[11px] font-bold tracking-[.1em] text-surface">
           {sourceLabel(order.source)}
         </span>
       </div>
@@ -125,10 +125,10 @@ export function OrderTracker({ tableId, orderId }: { tableId: TableId; orderId: 
 
       <div className="flex flex-col gap-2.5 rounded-2xl border border-ink/[0.09] bg-surface px-4 pt-4 pb-3.5">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold tracking-[.12em] text-muted">
+          <span className="text-[11px] font-bold tracking-[.04em] text-muted">
             TOKEN {order.id.slice(0, 8).toUpperCase()}
           </span>
-          <span className="text-[10.5px] font-semibold text-muted">Placed {since(order.created_at, now)}</span>
+          <span className="text-[11px] font-semibold text-muted">Placed {since(order.created_at, now)}</span>
         </div>
         {items.map((it) => (
           <div key={it.id} className="flex items-center gap-[9px]">
@@ -224,7 +224,7 @@ function StatusVisual({ order, now }: { order: OrderRow; now: number }) {
             <span className="text-[30px] font-extrabold text-primary tabular-nums">
               {almost ? "00:00" : clock(left)}
             </span>
-            <span className="text-[9px] font-semibold tracking-[.16em] text-muted">
+            <span className="text-[11px] font-semibold tracking-[.16em] text-muted">
               {almost ? "ALMOST THERE" : "REMAINING"}
             </span>
           </div>

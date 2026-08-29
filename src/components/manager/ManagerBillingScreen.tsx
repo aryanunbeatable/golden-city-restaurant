@@ -277,7 +277,7 @@ export function ManagerBillingScreen() {
   return (
     <main className="flex h-dvh flex-col overflow-hidden">
       <ManagerNav active="billing">
-        <LiveClock className="text-[11px] font-semibold text-muted" />
+        <LiveClock className="text-[12px] font-semibold text-muted" />
       </ManagerNav>
 
       <div className="flex flex-none flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-ink/10 px-4 py-2.5 md:px-6">
@@ -298,7 +298,7 @@ export function ManagerBillingScreen() {
         />
         <span className="ml-auto text-[12px] font-extrabold text-ink">
           {money(totalOwed)}
-          <span className="pl-1 text-[10.5px] font-semibold text-muted">
+          <span className="pl-1 text-[11px] font-semibold text-muted">
             to collect
           </span>
         </span>
@@ -484,7 +484,7 @@ function orderLineTotal(o: OrderWithItems): number {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <span className="text-[11px] font-bold tracking-[.12em] text-muted">
+    <span className="text-[12px] font-bold tracking-[.04em] text-muted">
       {children}
     </span>
   );
@@ -506,7 +506,7 @@ function Stat({
       >
         {n}
       </span>
-      <span className="text-[10.5px] font-semibold text-muted">{label}</span>
+      <span className="text-[12px] font-semibold text-muted">{label}</span>
     </span>
   );
 }
@@ -725,7 +725,7 @@ function BillPanel({
 
       {bottleRows.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 border-t border-dashed border-ink/[0.14] pt-2.5">
-          <span className="text-[10.5px] font-bold tracking-[.1em] text-muted">
+          <span className="text-[11px] font-bold tracking-[.1em] text-muted">
             REMOVE
           </span>
           {bottleRows.map(({ orderId, item }) => (
@@ -736,7 +736,7 @@ function BillPanel({
               className="flex items-center gap-1.5 rounded-lg border border-ink/[0.16] py-1 pl-2.5 pr-1.5 text-[11.5px] font-semibold text-ink transition hover:border-non-veg hover:text-non-veg disabled:opacity-40"
             >
               {item.quantity}× {item.item_name}
-              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-ink/[0.08] text-[10px] font-bold">
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-ink/[0.08] text-[11px] font-bold">
                 ×
               </span>
             </button>
@@ -746,7 +746,7 @@ function BillPanel({
 
       {growOrder && (
         <div className="flex flex-wrap items-center gap-2 border-t border-dashed border-ink/[0.14] pt-2.5">
-          <span className="text-[10.5px] font-bold tracking-[.1em] text-muted">
+          <span className="text-[11px] font-bold tracking-[.1em] text-muted">
             ADD
           </span>
           {COUNTER_ITEMS.map((item) => (
@@ -787,7 +787,7 @@ function BillPanel({
               <button
                 disabled={busy}
                 onClick={() => addBottle(item.id)}
-                className="ml-1 rounded-md bg-primary px-2 py-1 text-[10.5px] font-extrabold text-surface disabled:opacity-50"
+                className="ml-1 rounded-md bg-primary px-2 py-1 text-[11px] font-extrabold text-surface disabled:opacity-50"
               >
                 Add
               </button>

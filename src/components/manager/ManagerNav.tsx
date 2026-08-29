@@ -24,7 +24,7 @@ export function ManagerNav({ active, children }: { active: ManagerNavKey; childr
         ‹
       </Link>
       <span className="font-display text-base text-primary">Golden City</span>
-      <span className="hidden rounded-md bg-tertiary px-2.5 py-1.5 text-[10px] font-bold tracking-[.14em] text-surface sm:inline">
+      <span className="hidden rounded-md bg-tertiary px-2.5 py-1.5 text-[11px] font-bold tracking-[.04em] text-surface sm:inline">
         COUNTER · ORDER ENTRY
       </span>
       <div className="ml-auto flex items-center gap-2.5">{children}</div>
@@ -42,7 +42,7 @@ export function ManagerNav({ active, children }: { active: ManagerNavKey; childr
           >
             {l.label}
             {l.key === "orders" && pending > 0 && (
-              <span className="ml-1.5 inline-flex min-w-[18px] items-center justify-center rounded-full bg-secondary px-1 py-0.5 text-[10px] font-extrabold text-ink">
+              <span className="ml-1.5 inline-flex min-w-[18px] items-center justify-center rounded-full bg-secondary px-1 py-0.5 text-[11px] font-extrabold text-ink">
                 {pending}
               </span>
             )}

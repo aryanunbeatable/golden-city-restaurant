@@ -10,6 +10,7 @@ import {
   GATE_MIN_ORDERS,
   MAX_TILES,
   gateOpen,
+  leastOrderedCategoryId,
   popularEntries,
   rankPopular,
   windowStart,
@@ -108,5 +109,35 @@ assert.ok(popularEntries(menu, [row("Veg Soup", null, 5)], atBar).length > 0);
 // --- window -----------------------------------------------------------------
 const now = Date.parse("2026-08-27T00:00:00Z");
 assert.equal(windowStart(now).toISOString(), "2026-07-28T00:00:00.000Z");
+
+// --- least-ordered category --------------------------------------------------
+// Desserts is a real category with exactly one item (Gulab Jamun) — give
+// every OTHER category an order and leave Desserts untouched, so it is the
+// unique minimum regardless of menu.categories' own ordering.
+const oneOrderPerOtherCategory: PopularRow[] = [
+  "Veg Soup",
+  "Fresh Lime Soda",
+  "Paneer 65",
+  "Noodles",
+  "Paneer Tikka 08 Pcs",
+  "Green Salad",
+  "Chicken",
+  "Golden Veg Thali",
+  "Paneer Handi",
+  "Dal Fry",
+  "Chicken Punjabi Curry",
+  "Tawa Roti",
+  "Jeera Rice",
+  "Vanilla",
+].map((n) => row(n, null, 5));
+assert.equal(
+  leastOrderedCategoryId(menu, oneOrderPerOtherCategory),
+  "desserts",
+  "the only category with zero resolved orders is the least-ordered one",
+);
+
+// No data at all still returns a stable id rather than null or a crash — the
+// caller (menu nav) always needs a category to fall back to.
+assert.equal(leastOrderedCategoryId(menu, []), menu.categories[0].id);
 
 console.log("popular.check.ts: all assertions passed");

@@ -33,7 +33,15 @@ declare global {
 /** Prefill only — with OTP off this identifies nobody, it just saves typing. */
 const CONTACT_KEY = "gc:phone-contact";
 
-export function PhoneOrderFlow({ menu, popular = [] }: { menu: Menu; popular?: PopularEntry[] }) {
+export function PhoneOrderFlow({
+  menu,
+  popular = [],
+  leastOrderedCategoryId = null,
+}: {
+  menu: Menu;
+  popular?: PopularEntry[];
+  leastOrderedCategoryId?: string | null;
+}) {
   const router = useRouter();
   const cart = useCart();
 
@@ -225,7 +233,7 @@ export function PhoneOrderFlow({ menu, popular = [] }: { menu: Menu; popular?: P
               ‹
             </button>
             <span className="font-display text-base text-primary">Golden City</span>
-            <span className="rounded-md bg-tertiary px-2.5 py-1.5 text-[10px] font-bold tracking-[.12em] text-surface">
+            <span className="rounded-md bg-tertiary px-2.5 py-1.5 text-[11px] font-bold tracking-[.04em] text-surface">
               {serviceType === "takeaway" ? "TAKEAWAY" : "DINE-IN"}
             </span>
           </div>
@@ -238,6 +246,7 @@ export function PhoneOrderFlow({ menu, popular = [] }: { menu: Menu; popular?: P
             onBumpItem={cart.bumpItem}
             onOpenCart={() => setCartOpen(true)}
             popular={popular}
+            leastOrderedCategoryId={leastOrderedCategoryId}
           />
         </main>
       )}
@@ -282,32 +291,41 @@ function ClosedScreen({ message }: { message: string }) {
 
 function TypeStep({ onPick }: { onPick: (t: OrderServiceType) => void }) {
   return (
-    <main className="flex min-h-dvh flex-col justify-center gap-6 px-6 py-10">
-      <div className="flex flex-col gap-1.5 text-center">
-        <span className="font-display text-[26px] text-primary">Golden City Restaurant</span>
-        <span className="text-[12.5px] text-muted">Order ahead — we&apos;ll have it ready when you arrive.</span>
+    <main className="flex min-h-dvh flex-col gap-6 px-6 py-10">
+      <div className="flex flex-1 flex-col justify-center gap-6">
+        <div className="flex flex-col gap-1.5 text-center">
+          <span className="font-display text-[26px] text-primary">Golden City Restaurant</span>
+          <span className="text-[12.5px] text-muted">Order ahead — we&apos;ll have it ready when you arrive.</span>
+        </div>
+
+        {/* Takeaway first and visually heavier: it is almost all of this traffic. */}
+        <button
+          onClick={() => onPick("takeaway")}
+          className="flex flex-col gap-1.5 rounded-2xl bg-primary px-6 py-7 text-left text-surface shadow-[0_12px_28px_rgba(139,29,14,0.28)] transition hover:bg-[#7A180B]"
+        >
+          <span className="text-[19px] font-extrabold">Takeaway</span>
+          <span className="text-[12.5px] leading-[1.6] text-surface/80">
+            Pick a time, pay now, collect at the counter — no waiting.
+          </span>
+        </button>
+
+        <button
+          onClick={() => onPick("dine_in")}
+          className="flex flex-col gap-1.5 rounded-2xl border border-ink/[0.16] bg-surface px-6 py-6 text-left transition hover:border-primary"
+        >
+          <span className="text-[17px] font-bold text-ink">Dine-in</span>
+          <span className="text-[12px] leading-[1.6] text-muted">
+            Eating with us? Order ahead so your food lands as you sit down.
+          </span>
+        </button>
       </div>
 
-      {/* Takeaway first and visually heavier: it is almost all of this traffic. */}
-      <button
-        onClick={() => onPick("takeaway")}
-        className="flex flex-col gap-1.5 rounded-2xl bg-primary px-6 py-7 text-left text-surface shadow-[0_12px_28px_rgba(139,29,14,0.28)] transition hover:bg-[#7A180B]"
-      >
-        <span className="text-[19px] font-extrabold">Takeaway</span>
-        <span className="text-[12.5px] leading-[1.6] text-surface/80">
-          Pick a time, pay now, collect at the counter — no waiting.
-        </span>
-      </button>
-
-      <button
-        onClick={() => onPick("dine_in")}
-        className="flex flex-col gap-1.5 rounded-2xl border border-ink/[0.16] bg-surface px-6 py-6 text-left transition hover:border-primary"
-      >
-        <span className="text-[17px] font-bold text-ink">Dine-in</span>
-        <span className="text-[12px] leading-[1.6] text-muted">
-          Eating with us? Order ahead so your food lands as you sit down.
-        </span>
-      </button>
+      {/* First-timers land here with no context for the app — a plain
+          reassurance line does more for trust than the blank space it
+          replaces. */}
+      <p className="text-center text-[12px] leading-[1.6] text-muted">
+        No account, no app to install — just your name and number when you order.
+      </p>
     </main>
   );
 }
@@ -357,7 +375,7 @@ function DetailsStep({
       </div>
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-[10.5px] font-bold tracking-[.14em] text-muted">NAME</span>
+        <span className="text-[11px] font-bold tracking-[.14em] text-muted">NAME</span>
         <input
           value={name}
           onChange={(e) => onName(e.target.value)}
@@ -368,7 +386,7 @@ function DetailsStep({
       </label>
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-[10.5px] font-bold tracking-[.14em] text-muted">MOBILE NUMBER</span>
+        <span className="text-[11px] font-bold tracking-[.14em] text-muted">MOBILE NUMBER</span>
         <input
           value={phone}
           onChange={(e) => onPhone(e.target.value)}
@@ -377,12 +395,15 @@ function DetailsStep({
           autoComplete="tel"
           className={field}
         />
-        <span className="text-[10.5px] text-muted">So we can reach you about this order.</span>
+        <span className="text-[12px] leading-[1.5] text-muted">
+          So we can reach you about this order — no account, no OTP, just a call if
+          something changes.
+        </span>
       </label>
 
       {serviceType === "dine_in" && (
         <div className="flex flex-col gap-1.5">
-          <span className="text-[10.5px] font-bold tracking-[.14em] text-muted">HOW MANY PEOPLE?</span>
+          <span className="text-[11px] font-bold tracking-[.14em] text-muted">HOW MANY PEOPLE?</span>
           <div className="flex flex-wrap gap-1.5">
             {Array.from({ length: 8 }, (_, i) => i + 1).map((n) => (
               <button
@@ -407,7 +428,7 @@ function DetailsStep({
               className="h-11 w-16 rounded-xl border border-ink/[0.16] bg-surface text-center text-[14px] font-semibold text-ink outline-none placeholder:text-muted focus:border-primary"
             />
           </div>
-          <span className="text-[10.5px] text-muted">
+          <span className="text-[11px] text-muted">
             We can&apos;t hold a table in advance — this just helps us plan.
           </span>
         </div>
@@ -436,7 +457,7 @@ function TimePicker({
   return (
     <div className="flex flex-col gap-2 rounded-2xl border border-ink/[0.09] bg-surface px-3.5 py-[13px]">
       <div className="flex items-baseline justify-between">
-        <span className="text-[11px] font-bold tracking-[.12em] text-muted">READY BY</span>
+        <span className="text-[11px] font-bold tracking-[.04em] text-muted">READY BY</span>
         {selected && <span className="text-[12px] font-extrabold text-primary">{clockLabel(selected)}</span>}
       </div>
       {slots.length === 0 ? (

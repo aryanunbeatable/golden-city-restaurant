@@ -150,7 +150,7 @@ export function ManagerHistory() {
   return (
     <main className="flex h-dvh flex-col overflow-hidden">
       <ManagerNav active="history">
-        <LiveClock className="text-[11px] font-semibold text-muted" />
+        <LiveClock className="text-[12px] font-semibold text-muted" />
       </ManagerNav>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 md:px-6">
@@ -234,7 +234,7 @@ export function ManagerHistory() {
                 </span>
                 <button
                   onClick={exportMonth}
-                  className="rounded-lg border border-ink/[0.16] px-2.5 py-1 text-[10.5px] font-bold text-ink transition hover:border-primary hover:text-primary"
+                  className="rounded-lg border border-ink/[0.16] px-2.5 py-1 text-[11px] font-bold text-ink transition hover:border-primary hover:text-primary"
                 >
                   Export month
                 </button>
@@ -242,7 +242,7 @@ export function ManagerHistory() {
 
               <div className="grid grid-cols-7 gap-1 pb-1">
                 {WEEKDAYS.map((d, i) => (
-                  <span key={i} className="text-center text-[10px] font-bold text-muted">
+                  <span key={i} className="text-center text-[11px] font-bold text-muted">
                     {d}
                   </span>
                 ))}
@@ -278,8 +278,8 @@ export function ManagerHistory() {
                       </span>
                       {stat && (
                         <>
-                          <span className="text-[9px] font-bold opacity-80">{stat.count}</span>
-                          <span className="text-[8.5px] font-semibold opacity-70">
+                          <span className="text-[11px] font-bold opacity-80">{stat.count}</span>
+                          <span className="text-[11px] font-semibold opacity-70">
                             {Math.round(stat.revenue).toLocaleString("en-IN")}
                           </span>
                         </>
@@ -339,7 +339,7 @@ function DayPanel({
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-display text-[19px] text-primary">{longDate(dayKey)}</span>
         {isToday && (
-          <span className="rounded-full border border-secondary/45 bg-secondary/[0.18] px-2.5 py-1 text-[10px] font-bold text-[#8B6C08]">
+          <span className="rounded-full border border-secondary/45 bg-secondary/[0.18] px-2.5 py-1 text-[11px] font-bold text-[#8B6C08]">
             TODAY · IN PROGRESS
           </span>
         )}
@@ -405,7 +405,7 @@ function SearchResults({
   return (
     <div className="flex flex-col gap-3">
       <div className="rounded-xl border border-ink/[0.09] bg-surface p-4">
-        <span className="text-[11px] font-bold tracking-[.12em] text-muted">
+        <span className="text-[12px] font-bold tracking-[.04em] text-muted">
           “{query}” · {allTime ? "ALL TIME" : monthLabel.toUpperCase()}
         </span>
         <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 pt-2">
@@ -448,7 +448,7 @@ function SearchResults({
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-ink/[0.09] bg-surface px-3.5 py-2.5">
-      <span className="block text-[10px] font-bold tracking-[.12em] text-muted">{label.toUpperCase()}</span>
+      <span className="block text-[11px] font-bold tracking-[.04em] text-muted">{label.toUpperCase()}</span>
       <span className="block pt-1 text-[17px] font-extrabold text-ink">{value}</span>
     </div>
   );
@@ -457,12 +457,12 @@ function Stat({ label, value }: { label: string; value: string }) {
 function Split({ title, rows }: { title: string; rows: { label: string; count: number; revenue: number }[] }) {
   return (
     <div className="rounded-xl border border-ink/[0.09] bg-surface px-3.5 py-2.5">
-      <span className="block pb-1.5 text-[10px] font-bold tracking-[.12em] text-muted">{title}</span>
+      <span className="block pb-1.5 text-[11px] font-bold tracking-[.04em] text-muted">{title}</span>
       <div className="flex flex-col gap-1">
         {rows.map((r) => (
           <div key={r.label} className="flex items-baseline gap-2 text-[12px]">
             <span className="font-semibold text-ink">{r.label}</span>
-            <span className="text-[10.5px] text-muted">×{r.count}</span>
+            <span className="text-[11px] text-muted">×{r.count}</span>
             <span className="ml-auto font-extrabold text-ink">{money(r.revenue)}</span>
           </div>
         ))}
@@ -500,14 +500,14 @@ function HistoryOrderCard({
         >
           {sourceLabel(order.source)}
         </span>
-        <span className="text-[10px] font-bold tracking-[.08em] text-muted">
+        <span className="text-[11px] font-bold tracking-[.08em] text-muted">
           {order.id.slice(0, 8).toUpperCase()}
         </span>
         <span className="text-[11px] font-semibold text-muted">{istTime(order.created_at)}</span>
-        <span className={`rounded-full px-2.5 py-1 text-[10.5px] font-bold ${status.className}`}>
+        <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${status.className}`}>
           {status.label}
         </span>
-        <span className="text-[10.5px] font-semibold text-muted">
+        <span className="text-[11px] font-semibold text-muted">
           {order.placed_by === "manager" ? "Counter" : "Guest"}
         </span>
         <span className="ml-auto text-[14px] font-extrabold text-ink">
@@ -534,7 +534,7 @@ function HistoryOrderCard({
       </div>
 
       <div className="flex flex-wrap items-center gap-2 border-t border-dashed border-ink/[0.14] pt-2">
-        <span className="text-[10px] font-bold tracking-[.12em] text-muted">
+        <span className="text-[11px] font-bold tracking-[.04em] text-muted">
           {paymentLabel(order.payment_method, order.payment_status).toUpperCase()}
         </span>
         <div className="ml-auto">

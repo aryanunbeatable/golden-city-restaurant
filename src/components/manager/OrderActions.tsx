@@ -100,7 +100,7 @@ export function OrderActions({
       {canDelay &&
         (choosingDelay ? (
           <>
-            <span className="text-[10.5px] font-bold tracking-[.1em] text-muted">LATE BY</span>
+            <span className="text-[11px] font-bold tracking-[.1em] text-muted">LATE BY</span>
             {[10, 15, 30].map((m) => (
               <button
                 key={m}

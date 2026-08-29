@@ -9,6 +9,7 @@ import {
   ORDER_SOURCE_OPTIONS,
   PAYMENT_METHOD_LABELS,
   autoPaymentMethod,
+  isTableSource,
   type OrderSource,
 } from "@/types/order";
 import { useCart, money } from "@/lib/cart";
@@ -39,6 +40,24 @@ export function ManagerNewOrderScreen({
   const [panelOpen, setPanelOpen] = useState(false);
 
   const sourceLabel = ORDER_SOURCE_OPTIONS.find((s) => s.value === source)?.label ?? "";
+
+  // Switching source mid-build silently reassigns every line item to the new
+  // source with no other signal — a mis-tap after building a Table 1 order
+  // would otherwise ship it to Table 2 with nobody noticing until it's wrong
+  // at the pass. Confirm and clear rather than warn-and-keep: the cart was
+  // built for the old source, so carrying it over is never actually correct.
+  function pickSource(next: OrderSource) {
+    if (next === source) return;
+    if (cart.lines.length > 0) {
+      const nextLabel = ORDER_SOURCE_OPTIONS.find((s) => s.value === next)?.label ?? next;
+      const confirmed = window.confirm(
+        `Switch to ${nextLabel}? This clears the ${cart.totals.count} item(s) already added for ${sourceLabel}.`,
+      );
+      if (!confirmed) return;
+      cart.clear();
+    }
+    setSource(next);
+  }
   // Swiggy/Zomato settle through the platform automatically. Every other
   // source (table, parcel) is always pay-after-the-meal at the counter — the
   // guest hasn't eaten yet, so there is nothing to ask here. Collecting
@@ -78,7 +97,7 @@ export function ManagerNewOrderScreen({
   return (
     <main className="flex h-screen flex-col overflow-hidden">
       <ManagerNav active="new-order">
-        <LiveClock className="text-[11px] font-semibold text-muted" />
+        <LiveClock className="text-[12px] font-semibold text-muted" />
       </ManagerNav>
 
       <div className="flex min-h-0 flex-1">
@@ -87,22 +106,44 @@ export function ManagerNewOrderScreen({
               lines and a fifth of the screen. Reverts to wrapping from md up,
               where there's room. Temporary either way: this becomes a tab. */}
           <div className="flex flex-none items-center gap-2.5 overflow-x-auto border-b border-ink/10 px-4 py-3.5 md:flex-wrap md:overflow-x-visible md:px-[18px]">
-            <span className="mr-1 flex-none text-[10.5px] font-bold tracking-[.14em] text-muted">
+            <span className="mr-1 flex-none text-[11px] font-bold tracking-[.14em] text-muted">
               ORDER SOURCE
             </span>
-            {COUNTER_SOURCE_OPTIONS.map((s) => (
-              <button
-                key={s.value}
-                onClick={() => setSource(s.value)}
-                className={
-                  s.value === source
-                    ? "flex-none rounded-[9px] bg-primary px-[15px] py-2.5 text-[12.5px] font-extrabold text-surface shadow-[0_4px_12px_rgba(139,29,14,0.28)]"
-                    : "flex-none rounded-[9px] border border-ink/[0.16] bg-surface px-[15px] py-2.5 text-[12.5px] font-semibold text-ink transition hover:border-primary hover:text-primary"
-                }
-              >
-                {s.label}
-              </button>
-            ))}
+            {/* Dine-in tables and off-premise sources are two different
+                decisions, not one flat list — a thin divider keeps the first
+                tap (which kind of order is this?) fast even as the app grows
+                past 4 tables and 3 aggregators. */}
+            <div className="flex flex-none items-center gap-2.5">
+              {COUNTER_SOURCE_OPTIONS.filter((s) => isTableSource(s.value)).map((s) => (
+                <button
+                  key={s.value}
+                  onClick={() => pickSource(s.value)}
+                  className={
+                    s.value === source
+                      ? "flex-none rounded-[9px] bg-primary px-[15px] py-2.5 text-[12.5px] font-extrabold text-surface shadow-[0_4px_12px_rgba(139,29,14,0.28)]"
+                      : "flex-none rounded-[9px] border border-ink/[0.16] bg-surface px-[15px] py-2.5 text-[12.5px] font-semibold text-ink transition hover:border-primary hover:text-primary"
+                  }
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+            <div className="h-6 w-px flex-none bg-ink/10" />
+            <div className="flex flex-none items-center gap-2.5">
+              {COUNTER_SOURCE_OPTIONS.filter((s) => !isTableSource(s.value)).map((s) => (
+                <button
+                  key={s.value}
+                  onClick={() => pickSource(s.value)}
+                  className={
+                    s.value === source
+                      ? "flex-none rounded-[9px] bg-primary px-[15px] py-2.5 text-[12.5px] font-extrabold text-surface shadow-[0_4px_12px_rgba(139,29,14,0.28)]"
+                      : "flex-none rounded-[9px] border border-ink/[0.16] bg-surface px-[15px] py-2.5 text-[12.5px] font-semibold text-ink transition hover:border-primary hover:text-primary"
+                  }
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {!source ? (
@@ -174,7 +215,7 @@ export function ManagerNewOrderScreen({
             <>
               <div className="flex flex-none items-center gap-2 border-b border-ink/[0.09] px-4 pt-3.5 pb-2.5">
                 <span className="font-display text-[17px] text-primary">Kitchen token</span>
-                <span className="ml-auto rounded-md bg-tertiary px-[9px] py-1.5 text-[10px] font-extrabold tracking-[.1em] text-surface">
+                <span className="ml-auto rounded-md bg-tertiary px-[9px] py-1.5 text-[11px] font-extrabold tracking-[.1em] text-surface">
                   {sourceLabel || "—"}
                 </span>
                 <button
@@ -199,7 +240,7 @@ export function ManagerNewOrderScreen({
                     >
                       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                         <span className="text-xs font-bold text-ink">{l.name}</span>
-                        <span className="text-[10px] font-semibold text-muted">
+                        <span className="text-[11px] font-semibold text-muted">
                           {l.variantName ? `${l.variantName} · ` : ""}
                           {money(l.price)} each · {l.prepTimeMinutes} min
                         </span>
@@ -231,8 +272,8 @@ export function ManagerNewOrderScreen({
 
               <div className="flex flex-none flex-col gap-2.5 border-t border-ink/10 px-4 pt-[13px] pb-4">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[10.5px] font-bold tracking-[.14em] text-muted">PAYMENT</span>
-                  <span className="rounded-full bg-tertiary px-[9px] py-[5px] text-[10.5px] font-bold text-surface">
+                  <span className="text-[11px] font-bold tracking-[.14em] text-muted">PAYMENT</span>
+                  <span className="rounded-full bg-tertiary px-[9px] py-[5px] text-[11px] font-bold text-surface">
                     {method ? PAYMENT_METHOD_LABELS[method] : "Pay at counter"}
                   </span>
                 </div>
@@ -254,7 +295,7 @@ export function ManagerNewOrderScreen({
                 >
                   {submitting ? "Sending…" : "Send to Kitchen →"}
                 </button>
-                <span className="text-center text-[10.5px] leading-[1.5] text-muted">
+                <span className="text-center text-[12px] leading-[1.5] text-muted">
                   {method
                     ? `Recorded as paid — ${PAYMENT_METHOD_LABELS[method].toLowerCase()}.`
                     : "Unpaid — collect it later from Billing."}

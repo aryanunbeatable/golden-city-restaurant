@@ -75,10 +75,10 @@ export function ApprovalCard({
         <span className="rounded-[7px] bg-primary px-2.5 py-1.5 text-[11px] font-extrabold text-surface">
           {order.service_type === "takeaway" ? "PHONE · TAKEAWAY" : "PHONE · DINE-IN"}
         </span>
-        <span className="rounded-full bg-veg/[0.15] px-2.5 py-1 text-[10.5px] font-bold text-veg">
+        <span className="rounded-full bg-veg/[0.15] px-2.5 py-1 text-[11px] font-bold text-veg">
           PAID {money(orderTotal(order.order_items))}
         </span>
-        <span className="text-[10.5px] font-semibold text-muted">waiting {since(order.created_at, now)}</span>
+        <span className="text-[11px] font-semibold text-muted">waiting {since(order.created_at, now)}</span>
       </div>
 
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -112,7 +112,7 @@ export function ApprovalCard({
 
       {changingTime ? (
         <div className="flex flex-col gap-1.5 border-t border-dashed border-ink/[0.16] pt-2">
-          <span className="text-[10.5px] font-bold tracking-[.12em] text-muted">APPROVE WITH A NEW TIME</span>
+          <span className="text-[12px] font-bold tracking-[.04em] text-muted">APPROVE WITH A NEW TIME</span>
           <div className="flex gap-1.5 overflow-x-auto pb-1">
             {slots.map((slot) => (
               <button
@@ -151,7 +151,7 @@ export function ApprovalCard({
 
           {confirmingReject ? (
             <div className="ml-auto flex items-center gap-1.5">
-              <span className="text-[10.5px] font-semibold text-muted">Refund &amp; reject?</span>
+              <span className="text-[11px] font-semibold text-muted">Refund &amp; reject?</span>
               <button
                 disabled={busy}
                 onClick={reject}
